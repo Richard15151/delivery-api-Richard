@@ -19,12 +19,9 @@ public class ClienteService {
         if( repository.existsByEmail(cliente.getEmail()) ){
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
-
         cliente.setAtivo(true);
         return repository.save(cliente);
-
     }
-
 
     public List<Cliente> listarAtivos(){
         return repository.findByAtivoTrue();
