@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -39,14 +40,10 @@ public class ClienteController {
         return service.buscarPorId(id);
     }
 
-    @PutMapping("/{id}/inativar-cliente")
-    public void inativar(@PathVariable Long id){
-        service.inativar(id);
-    }
-
-    @PutMapping("/{id}/ativar-cliente")
-    public void ativar(@PathVariable Long id){
-        service.ativar(id);
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> trocarStatus(@PathVariable Long id) {
+        service.alternarStatus(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/atualizar-dados-clientes")

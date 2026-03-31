@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.deliverytech.delivery_api.model.Cliente;
+import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 
 @Service
@@ -31,15 +32,9 @@ public class ClienteService {
         return repository.findById(id).orElseThrow(()-> new IllegalArgumentException("Cliente não encontrado."));
     }
 
-    public void inativar(Long id){
+    public void alternarStatus(Long id) {
         Cliente cliente = buscarPorId(id);
-        cliente.setAtivo(false);
-        repository.save(cliente);
-    }
-
-    public void ativar(Long id){
-        Cliente cliente = buscarPorId(id);
-        cliente.setAtivo(true);
+        cliente.setAtivo(!cliente.getAtivo());
         repository.save(cliente);
     }
 

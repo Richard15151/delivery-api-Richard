@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,7 +32,7 @@ public class RestauranteController {
 
     @GetMapping
     public List<Restaurante> listarAtivos(){
-        return service.listarAtivos();
+        return service.listarRanking();
     }
 
     @GetMapping("/{id}")
@@ -39,14 +40,25 @@ public class RestauranteController {
         return service.buscarPorId(id);
     }
 
-    @PutMapping("/{id}/inativar-restaurante")
-    public void inativar(@PathVariable Long id){
-        service.inativar(id);
+    @GetMapping("/pesquisar/{nome}")
+    public List<Restaurante> buscarPorNome(@PathVariable String nome){
+        return service.buscarPorNome(nome);
     }
 
-    @PutMapping("/{id}/ativar-restaurante")
-    public void ativar(@PathVariable Long id){
-        service.ativar(id);
+    @GetMapping("/categoria/{categoria}")
+    public List<Restaurante> BuscarPorCategoria(@PathVariable String categoria) {
+        return service.buscarPorCategoria(categoria);
+    }
+
+    @GetMapping("/ranking")
+    public List<Restaurante> verRanking() {
+        return service.listarRanking();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> trocarStatus(@PathVariable Long id) {
+        service.alternarStatus(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/atualizar-dados-restaurante")

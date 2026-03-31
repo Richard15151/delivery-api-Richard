@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.model.Restaurante;
 
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
@@ -32,15 +33,21 @@ public class RestauranteService {
         return repository.findById(id).orElseThrow(()-> new IllegalArgumentException("Restaurante não encontrado."));
     }
 
-    public void inativar(Long id){
-        Restaurante restaurante = buscarPorId(id);
-        restaurante.setAtivo(false);
-        repository.save(restaurante);
+    public List<Restaurante> buscarPorNome(String nome){
+        return repository.findByNomeContainingIgnoreCase(nome);
     }
 
-    public void ativar(Long id){
+    public List<Restaurante> buscarPorCategoria(String categoria) {
+        return repository.findByCategoriaContainingIgnoreCase(categoria);
+    }
+
+    public List<Restaurante> listarRanking() {
+        return repository.findByAtivoTrueOrderByAvaliacaoDesc();
+    }
+
+    public void alternarStatus(Long id) {
         Restaurante restaurante = buscarPorId(id);
-        restaurante.setAtivo(true);
+        restaurante.setAtivo(!restaurante.getAtivo());
         repository.save(restaurante);
     }
 
