@@ -37,6 +37,12 @@ public class ClienteService {
         repository.save(cliente);
     }
 
+    public void ativar(Long id){
+        Cliente cliente = buscarPorId(id);
+        cliente.setAtivo(true);
+        repository.save(cliente);
+    }
+
     public Cliente atualizar(Long id, Cliente dados){
         Cliente cliente = buscarPorId(id);
         cliente.setNome(dados.getNome());
@@ -44,6 +50,13 @@ public class ClienteService {
         cliente.setTelefone(dados.getTelefone());
         cliente.setEndereco(dados.getEndereco());
         return repository.save(cliente);
+    }
+
+    public void deletar(Long id){
+        if (!repository.existsById(id)) {
+        throw new IllegalArgumentException("Cliente não encontrado para exclusão.");
+        }
+        repository.deleteById(id);
     }
     
 }

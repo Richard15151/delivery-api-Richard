@@ -12,49 +12,49 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.deliverytech.delivery_api.model.Cliente;
-import com.deliverytech.delivery_api.service.ClienteService;
+import com.deliverytech.delivery_api.model.Restaurante;
+import com.deliverytech.delivery_api.service.RestauranteService;
 
 @RestController
-@RequestMapping("/clientes")
-public class ClienteController {
-    private ClienteService service;
+@RequestMapping("/restaurantes")
+public class RestauranteController {
+    private RestauranteService service;
 
-    public ClienteController ( ClienteService service){
+    public RestauranteController ( RestauranteService service){
         this.service = service;
     }
 
     @PostMapping("/cadastrar")
-    public ResponseEntity<Cliente> cadastrar(@RequestBody Cliente cliente ){
-        return ResponseEntity.status(201).body(service.cadastrar(cliente));
+    public ResponseEntity<Restaurante> cadastrar(@RequestBody Restaurante restaurante){
+        return ResponseEntity.status(201).body(service.cadastrar(restaurante));
     }
 
     @GetMapping
-    public List<Cliente> listarAtivos(){
+    public List<Restaurante> listarAtivos(){
         return service.listarAtivos();
     }
 
     @GetMapping("/{id}")
-    public Cliente buscarPorId(@PathVariable Long id){
+    public Restaurante buscarPorId(@PathVariable Long id){
         return service.buscarPorId(id);
     }
 
-    @PutMapping("/{id}/inativar-cliente")
+    @PutMapping("/{id}/inativar-restaurante")
     public void inativar(@PathVariable Long id){
         service.inativar(id);
     }
 
-    @PutMapping("/{id}/ativar-cliente")
+    @PutMapping("/{id}/ativar-restaurante")
     public void ativar(@PathVariable Long id){
         service.ativar(id);
     }
 
-    @PutMapping("/{id}/atualizar-dados-clientes")
-    public Cliente atualizar(@PathVariable Long id, @RequestBody Cliente dados){
+    @PutMapping("/{id}/atualizar-dados-restaurante")
+    public Restaurante atualizar(@PathVariable Long id, @RequestBody Restaurante dados){
         return service.atualizar(id, dados);
     }
 
-    @DeleteMapping("/{id}/deletar-cliente")
+    @DeleteMapping("/{id}/deletar-restaurante")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build(); 
