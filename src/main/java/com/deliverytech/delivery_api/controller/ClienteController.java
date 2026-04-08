@@ -2,6 +2,7 @@ package com.deliverytech.delivery_api.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,25 +14,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.deliverytech.delivery_api.dto.requests.ClienteDTO;
+import com.deliverytech.delivery_api.dto.responses.ClienteResponseDTO;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.service.ClienteService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/clientes")
 public class ClienteController {
-    private ClienteService service;
+    private final ClienteService service;
 
     public ClienteController ( ClienteService service){
         this.service = service;
     }
 
     @PostMapping("/cadastrar")
-    public ResponseEntity<Cliente> cadastrar(@RequestBody Cliente cliente ){
-        return ResponseEntity.status(201).body(service.cadastrar(cliente));
+    public ResponseEntity<ClienteResponseDTO> cadastrar(@Valid @RequestBody ClienteDTO dto ){
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(dto));
     }
 
     @GetMapping
-    public List<Cliente> listarAtivos(){
+    public List<ClienteResponseDTO> listarAtivos(){
         return service.listarAtivos();
     }
 
@@ -47,7 +52,7 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}/atualizar-dados-clientes")
-    public Cliente atualizar(@PathVariable Long id, @RequestBody Cliente dados){
+    public ClienteResponseDTO atualizar(@PathVariable Long id, @RequestBody ClienteDTO dados){
         return service.atualizar(id, dados);
     }
 

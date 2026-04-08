@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.deliverytech.delivery_api.model.Restaurante;
+import com.deliverytech.delivery_api.dto.requests.RestauranteDTO;
+import com.deliverytech.delivery_api.dto.responses.RestauranteResponseDTO;
 import com.deliverytech.delivery_api.service.RestauranteService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/restaurantes")
@@ -26,32 +28,32 @@ public class RestauranteController {
     }
 
     @PostMapping("/cadastrar")
-    public ResponseEntity<Restaurante> cadastrar(@RequestBody Restaurante restaurante){
-        return ResponseEntity.status(201).body(service.cadastrar(restaurante));
+    public ResponseEntity<RestauranteResponseDTO> cadastrar(@Valid @RequestBody RestauranteDTO dto){
+        return ResponseEntity.status(201).body(service.cadastrar(dto));
     }
 
     @GetMapping
-    public List<Restaurante> listarAtivos(){
+    public List<RestauranteResponseDTO> listarAtivos(){
         return service.listarRanking();
     }
 
     @GetMapping("/{id}")
-    public Restaurante buscarPorId(@PathVariable Long id){
+    public RestauranteResponseDTO buscarPorId(@PathVariable Long id){
         return service.buscarPorId(id);
     }
 
     @GetMapping("/pesquisar/{nome}")
-    public List<Restaurante> buscarPorNome(@PathVariable String nome){
+    public List<RestauranteResponseDTO> buscarPorNome(@PathVariable String nome){
         return service.buscarPorNome(nome);
     }
 
     @GetMapping("/categoria/{categoria}")
-    public List<Restaurante> BuscarPorCategoria(@PathVariable String categoria) {
+    public List<RestauranteResponseDTO> BuscarPorCategoria(@PathVariable String categoria) {
         return service.buscarPorCategoria(categoria);
     }
 
     @GetMapping("/ranking")
-    public List<Restaurante> verRanking() {
+    public List<RestauranteResponseDTO> verRanking() {
         return service.listarRanking();
     }
 
@@ -62,7 +64,7 @@ public class RestauranteController {
     }
 
     @PutMapping("/{id}/atualizar-dados-restaurante")
-    public Restaurante atualizar(@PathVariable Long id, @RequestBody Restaurante dados){
+    public RestauranteResponseDTO atualizar(@PathVariable Long id, @RequestBody RestauranteDTO dados){
         return service.atualizar(id, dados);
     }
 
