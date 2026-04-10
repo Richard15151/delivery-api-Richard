@@ -1,5 +1,6 @@
 package com.deliverytech.delivery_api.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -19,22 +20,22 @@ import com.deliverytech.delivery_api.service.RestauranteService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/restaurantes")
+@RequestMapping("/api/restaurantes")
 public class RestauranteController {
-    private RestauranteService service;
+    private final RestauranteService service;
 
-    public RestauranteController ( RestauranteService service){
+    public RestauranteController(RestauranteService service) {
         this.service = service;
     }
 
-    @PostMapping("/cadastrar")
-    public ResponseEntity<RestauranteResponseDTO> cadastrar(@Valid @RequestBody RestauranteDTO dto){
-        return ResponseEntity.status(201).body(service.cadastrar(dto));
+    @PostMapping
+    public ResponseEntity<RestauranteResponseDTO> cadastrar(@Valid @RequestBody RestauranteDTO dto) {
+        return ResponseEntity.status(201).body(service.cadastrarRestaurante(dto));
     }
 
     @GetMapping
     public List<RestauranteResponseDTO> listarAtivos(){
-        return service.listarRanking();
+        return service.listarAtivos();
     }
 
     @GetMapping("/{id}")
@@ -57,15 +58,20 @@ public class RestauranteController {
         return service.listarRanking();
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{id}")
     public ResponseEntity<Void> trocarStatus(@PathVariable Long id) {
         service.alternarStatus(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/atualizar-dados-restaurante")
-    public RestauranteResponseDTO atualizar(@PathVariable Long id, @RequestBody RestauranteDTO dados){
-        return service.atualizar(id, dados);
+    @PutMapping("/{id}")
+    public RestauranteResponseDTO atualizar(@PathVariable Long id, @Valid @RequestBody RestauranteDTO dto) {
+        return service.atualizar(id, dto);
+    }
+
+    @GetMapping("/{id}/taxa-entrega/{cep}")
+    public BigDecimal calcularTaxa(@PathVariable Long id, @PathVariable String cep) {
+        return service.calcularTaxaEntrega(id, cep);
     }
 
     @DeleteMapping("/{id}/deletar-restaurante")

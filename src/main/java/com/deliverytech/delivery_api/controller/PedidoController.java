@@ -5,15 +5,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.deliverytech.delivery_api.model.Pedido;
-import com.deliverytech.delivery_api.model.StatusPedido;
+import com.deliverytech.delivery_api.dto.requests.PedidoDTO;
+import com.deliverytech.delivery_api.dto.responses.PedidoResponseDTO;
+import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.service.PedidoService;
 
+import jakarta.validation.Valid;
+
 @RestController
-@RequestMapping("/pedidos")
+@RequestMapping("/api/pedidos")
 public class PedidoController {
 
     private final PedidoService service;
@@ -23,42 +27,35 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<Pedido> criar(@RequestBody Pedido pedido) {
-        Pedido novoPedido = service.criarPedido(pedido);
-        return ResponseEntity.status(201).body(novoPedido);
+    public ResponseEntity<PedidoResponseDTO> criar(@Valid @RequestBody PedidoDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criarPedido(dto));
+    }
+
+    @GetMapping("/{id}")
+    public PedidoResponseDTO buscarPorId(@PathVariable Long id) {
+        return service.buscarPedidoPorId(id);
     }
 
     @GetMapping("/cliente/{clienteId}")
-    public List<Pedido> listarPorCliente(@PathVariable Long clienteId) {
+    public List<PedidoResponseDTO> listarPorCliente(@PathVariable Long clienteId) {
         return service.buscarPorCliente(clienteId);
     }
 
     @GetMapping("/status/{status}")
-    public List<Pedido> listarPorStatus(@PathVariable StatusPedido status) {
+    public List<PedidoResponseDTO> listarPorStatus(@PathVariable StatusPedido status) {
         return service.buscarPorStatus(status);
     }
 
     @GetMapping("/periodo")
-    public List<Pedido> listarPorPeriodo(
+    public List<PedidoResponseDTO> listarPorPeriodo(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
         return service.buscarPorPeriodo(inicio, fim);
     }
 
-    @GetMapping("/data")
-    public List<Pedido> listarPorData(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
-        return service.buscarPorData(inicio, fim);
-    }
-
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Pedido> atualizarStatus(
-            @PathVariable Long id, 
-            @RequestBody StatusPedido novoStatus) {
-        
-        Pedido pedidoAtualizado = service.atualizarStatus(id, novoStatus);
-        return ResponseEntity.ok(pedidoAtualizado);
+    public ResponseEntity<PedidoResponseDTO> atualizarStatus(@PathVariable Long id, @RequestBody StatusPedido status) {
+        return ResponseEntity.ok(service.atualizarStatus(id, status));
     }
 
     @GetMapping("/relatorios/faturamento")

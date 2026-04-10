@@ -7,7 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.deliverytech.delivery_api.model.StatusPedido;
+import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.model.ItemPedido;
 import com.deliverytech.delivery_api.model.Pedido;
@@ -18,6 +18,7 @@ import com.deliverytech.delivery_api.repository.ItemPedidoRepository;
 import com.deliverytech.delivery_api.repository.PedidoRepository;
 import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
+import com.deliverytech.delivery_api.dto.responses.ItemPedidoResponseDTO;
 
 @Configuration
 public class DataLoader {

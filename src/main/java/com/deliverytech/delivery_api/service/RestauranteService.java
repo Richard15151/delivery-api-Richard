@@ -1,5 +1,6 @@
 package com.deliverytech.delivery_api.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.deliverytech.delivery_api.dto.responses.RestauranteResponseDTO;
 import com.deliverytech.delivery_api.exception.BusinessException;
+import com.deliverytech.delivery_api.exception.EntityNotFoundException;
 import com.deliverytech.delivery_api.dto.requests.RestauranteDTO;
 // import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.model.Restaurante;
@@ -31,7 +33,7 @@ public class RestauranteService {
     }
 
     @Transactional
-    public RestauranteResponseDTO cadastrar(RestauranteDTO dto) {
+    public RestauranteResponseDTO cadastrarRestaurante(RestauranteDTO dto) {
         if( repository.existsByNome(dto.getNome()) ){
             throw new BusinessException("Restaurante já cadastrado.");
         }
@@ -47,8 +49,7 @@ public class RestauranteService {
     }
 
     public RestauranteResponseDTO buscarPorId(Long id) {
-        Restaurante restaurante = buscarEntidade(id);
-        return mapper.map(restaurante, RestauranteResponseDTO.class);
+        return mapper.map(buscarEntidade(id), RestauranteResponseDTO.class);
     }
     
     public List<RestauranteResponseDTO> buscarPorNome(String nome) {
@@ -59,10 +60,8 @@ public class RestauranteService {
     }
 
     public List<RestauranteResponseDTO> buscarPorCategoria(String categoria) {
-        return repository.findByCategoriaContainingIgnoreCase(categoria)
-                .stream()
-                .map(restaurante -> mapper.map(restaurante, RestauranteResponseDTO.class))
-                .toList();
+        return repository.findByCategoriaContainingIgnoreCase(categoria).stream()
+                .map(r -> mapper.map(r, RestauranteResponseDTO.class)).toList();
     }
 
     public List<RestauranteResponseDTO> listarRanking() {
@@ -72,6 +71,14 @@ public class RestauranteService {
                 .toList();
     }
 
+    public BigDecimal calcularTaxaEntrega(Long restauranteId, String cep) {
+        Restaurante restaurante = buscarEntidade(restauranteId);
+        if (cep.startsWith("0")) {
+            return BigDecimal.ZERO;
+        }
+        return restaurante.getTaxaEntrega();
+    }
+
     @Transactional
     public void alternarStatus(Long id) {
         Restaurante restaurante = buscarEntidade(id);
@@ -79,21 +86,17 @@ public class RestauranteService {
         repository.save(restaurante);
     }
 
-    public RestauranteResponseDTO atualizar(Long id, RestauranteDTO dados) {
+    @Transactional
+    public RestauranteResponseDTO atualizar(Long id, RestauranteDTO dto) {
         Restaurante restaurante = buscarEntidade(id);
-        restaurante.setNome(dados.getNome());
-        restaurante.setCategoria(dados.getCategoria());
-        restaurante.setEndereco(dados.getEndereco());
-        restaurante.setTelefone(dados.getTelefone());
-        // restaurante.setTaxaEntrega(dados.getTaxaEntrega());
-
+        mapper.map(dto, restaurante); // O ModelMapper copia os dados do DTO para a Entidade existente
         return mapper.map(repository.save(restaurante), RestauranteResponseDTO.class);
     }
 
     @Transactional
     public void deletar(Long id) {
         if (!repository.existsById(id)) {
-            throw new IllegalArgumentException("Restaurante não encontrado para exclusão.");
+            throw new EntityNotFoundException("Restaurante não encontrado.");
         }
         repository.deleteById(id);
     }

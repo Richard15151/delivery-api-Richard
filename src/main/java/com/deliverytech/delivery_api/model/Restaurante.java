@@ -34,6 +34,8 @@ public class Restaurante {
 
     private BigDecimal avaliacao;
 
+    private BigDecimal taxaEntrega;
+
     private boolean ativo;
 
     @OneToMany(mappedBy= "restaurante", fetch=FetchType.LAZY)

@@ -14,5 +14,7 @@ public class RestauranteResponseDTO {
     private String endereco;
     private String telefone;
     private BigDecimal avaliacao;
-    private Boolean ativo;
+    private BigDecimal taxaEntrega;
+    private boolean ativo;
+
 }

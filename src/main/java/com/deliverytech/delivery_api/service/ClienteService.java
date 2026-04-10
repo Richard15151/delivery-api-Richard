@@ -29,9 +29,11 @@ public class ClienteService {
             .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
     }
 
-    public Cliente buscarPorId(Long id){
-        return repository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+    public ClienteResponseDTO buscarPorId(Long id){
+        Cliente cliente =  repository.findById(id)
+        .orElseThrow(()-> new EntityNotFoundException("Cliente não encontrado."));
+
+        return mapper.map(cliente, ClienteResponseDTO.class);
     }
 
     private Cliente buscarEntidade(Long id) {
@@ -47,14 +49,15 @@ public class ClienteService {
         Cliente cliente = mapper.map(dto, Cliente.class);
         cliente.setAtivo(true);
         Cliente salvo = repository.save(cliente);
+
         return mapper.map(salvo, ClienteResponseDTO.class);
     }
 
     public List<ClienteResponseDTO> listarAtivos(){
         return repository.findByAtivoTrue()
-            .stream()
-            .map(c -> mapper.map(c, ClienteResponseDTO.class))
-            .toList();
+        .stream()
+        .map(c -> mapper.map(c, ClienteResponseDTO.class))
+        .toList();
     }
 
     @Transactional

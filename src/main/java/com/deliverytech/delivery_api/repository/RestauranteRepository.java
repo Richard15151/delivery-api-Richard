@@ -13,6 +13,6 @@ public interface RestauranteRepository extends JpaRepository<Restaurante, Long>{
     List<Restaurante> findByAtivoTrue();
     List<Restaurante> findByCategoriaContainingIgnoreCase(String categoria);
     List<Restaurante> findByAtivoTrueOrderByAvaliacaoDesc();
-    List<Restaurante> findByTaxaEntregaLessThanEqual(BigDecimal taxa);
+    List<Restaurante> findByTaxaEntregaLessThanEqual(BigDecimal taxaEntrega);
     List<Restaurante> findTop5ByOrderByNomeAsc();
 }
