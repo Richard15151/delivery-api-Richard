@@ -1,15 +1,17 @@
 package com.deliverytech.delivery_api.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-import com.deliverytech.delivery_api.model.Pedido;
-import com.deliverytech.delivery_api.repository.PedidoRepository;
+import com.deliverytech.delivery_api.dto.requests.ItemPedidoDTO;
 import com.deliverytech.delivery_api.dto.requests.PedidoDTO;
 import com.deliverytech.delivery_api.dto.responses.PedidoResponseDTO;
 import com.deliverytech.delivery_api.enums.StatusPedido;
@@ -17,92 +19,112 @@ import com.deliverytech.delivery_api.exception.BusinessException;
 import com.deliverytech.delivery_api.exception.EntityNotFoundException;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.model.ItemPedido;
-import com.deliverytech.delivery_api.repository.ClienteRepository;
+import com.deliverytech.delivery_api.model.Pedido;
 import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.model.Restaurante;
+import com.deliverytech.delivery_api.repository.ClienteRepository;
+import com.deliverytech.delivery_api.repository.ItemPedidoRepository;
+import com.deliverytech.delivery_api.repository.PedidoRepository;
 import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
-
-import com.deliverytech.delivery_api.dto.requests.ItemPedidoDTO;
 
 @Service
 public class PedidoService {
 
-    private final PedidoRepository repository;
-    private final ProdutoRepository produtoRepository;
-    private final ClienteRepository clienteRepository;
-    private final RestauranteRepository restauranteRepository;
+    @Autowired
+    private PedidoRepository pedidoRepository;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private RestauranteRepository restauranteRepository;
+
+    @Autowired
+    private ItemPedidoRepository itemPedidoRepository;
+
+    @Autowired
+    private ProdutoRepository produtoRepository;
+
     private final ModelMapper mapper;
 
+    private PedidoResponseDTO toResponseDTO(Pedido pedido){
+        return mapper.map(pedido, PedidoResponseDTO.class);
+    }
     
-    public PedidoService(PedidoRepository repository, ProdutoRepository produtoRepository, 
-                         ClienteRepository clienteRepository, RestauranteRepository restauranteRepository, ModelMapper mapper) {
-        this.repository = repository;
-        this.produtoRepository = produtoRepository;
+    public PedidoService(PedidoRepository pedidoRepository, ClienteRepository clienteRepository,
+            RestauranteRepository restauranteRepository, ItemPedidoRepository itemPedidoRepository, ModelMapper mapper, ProdutoRepository produtoRepository) {
+        this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.restauranteRepository = restauranteRepository;
+        this.itemPedidoRepository = itemPedidoRepository;
+        this.produtoRepository = produtoRepository;
         this.mapper = mapper;
     }
 
     @Transactional
     public PedidoResponseDTO criarPedido(PedidoDTO dto) {
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
-        if (!cliente.isAtivo()) throw new BusinessException("Cliente está inativo e não pode pedir.");
+            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+
+        if (!cliente.isAtivo()) throw new BusinessException("Cliente inativo.");
 
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())
-                .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
-        if (!restaurante.isAtivo()) throw new BusinessException("Restaurante está fechado no momento.");
+            .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
+
+        if (!restaurante.isAtivo()) throw new BusinessException("Restaurante inativo.");
 
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
         pedido.setRestaurante(restaurante);
-        pedido.setEnderecoEntrega(dto.getEnderecoEntrega());
         pedido.setStatus(StatusPedido.PENDENTE);
-        
-        pedido.setDataPedido(LocalDateTime.now());
+        pedido.setEnderecoEntrega(dto.getEnderecoEntrega());
 
-        BigDecimal taxa = restaurante.getTaxaEntrega() != null ? restaurante.getTaxaEntrega() : BigDecimal.ZERO;
-        pedido.setTaxaEntrega(taxa);
+        BigDecimal total = BigDecimal.ZERO;
 
-        BigDecimal subtotalGeral = BigDecimal.ZERO;
+        for (ItemPedidoDTO itemDTO : dto.getItens()) {
+            Produto produto = produtoRepository.findById(itemDTO.getProdutoId())
+                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
 
-        for (ItemPedidoDTO itemDto : dto.getItens()) {
-            Produto produto = produtoRepository.findById(itemDto.getProdutoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Produto ID " + itemDto.getProdutoId() + " não existe."));
-            
-            if (!produto.isDisponivel()) throw new BusinessException("Produto " + produto.getNome() + " está indisponível.");
-
-            if (!produto.getRestaurante().getId().equals(restaurante.getId())) {
-                throw new BusinessException("Produto " + produto.getNome() + " não pertence ao restaurante " + restaurante.getNome());
-            }
+            if (!produto.isDisponivel()) throw new BusinessException("Produto indisponível: " + produto.getNome());
 
             ItemPedido item = new ItemPedido();
+            item.setPedido(pedido);
             item.setProduto(produto);
-            item.setQuantidade(itemDto.getQuantidade());
+            item.setQuantidade(itemDTO.getQuantidade());
             item.setPrecoUnitario(produto.getPreco());
             
-            BigDecimal subtotalItem = produto.getPreco().multiply(BigDecimal.valueOf(itemDto.getQuantidade()));
-            item.setSubtotal(subtotalItem);
-            item.setPedido(pedido);
+            BigDecimal subtotal = produto.getPreco().multiply(BigDecimal.valueOf(itemDTO.getQuantidade()));
+            item.setSubtotal(subtotal);
             
             pedido.getItens().add(item);
-            subtotalGeral = subtotalGeral.add(subtotalItem);
+            total = total.add(subtotal);
         }
-        pedido.setValorTotal(subtotalGeral.add(pedido.getTaxaEntrega()));
-        
-        Pedido pedidoSalvo = repository.save(pedido);
-        return converterParaDTO(pedidoSalvo);
+
+        pedido.setValorTotal(total);
+        return toResponseDTO(pedidoRepository.save(pedido));
     }
 
-    public List<PedidoResponseDTO> buscarPorCliente(Long clienteId) {
-        return repository.findByClienteId(clienteId).stream()
-                .map(this::converterParaDTO)
-                .toList();
+    @Transactional
+    public PedidoResponseDTO confirmarPedido(Long pedidoId){
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+        .orElseThrow(() -> new EntityNotFoundException("Pedido não localizado.") );
+
+        if(pedido.getStatus() != StatusPedido.PENDENTE){
+            throw new BusinessException("Apenas pedidos PENDENTES podem ser confirmados.");
+        }
+
+        pedido.setStatus(StatusPedido.CONFIRMADO);
+        return toResponseDTO(pedido);
+    }
+
+    public Page<PedidoResponseDTO> listarPorCliente(Long clienteId, Pageable pageable) {
+        return pedidoRepository.buscarItensPorClientes(clienteId, pageable)
+            .map(this::toResponseDTO);
     }
 
     public PedidoResponseDTO buscarPedidoPorId(Long id) {
-    Pedido pedido = repository.findById(id)
+    Pedido pedido = pedidoRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado com o ID: " + id));
     return converterParaDTO(pedido);
     }
@@ -125,42 +147,67 @@ public class PedidoService {
     }
 
     public List<PedidoResponseDTO> buscarPorStatus(StatusPedido status){
-        return repository.findByStatus(status).stream()
+        return pedidoRepository.findByStatus(status).stream()
                 .map(this::converterParaDTO)
                 .toList();
     }
 
     public List<PedidoResponseDTO> buscarPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
-        return repository.findByDataPedidoBetween(inicio, fim).stream()
+        return pedidoRepository.findByDataPedidoBetween(inicio, fim).stream()
                 .map(this::converterParaDTO)
                 .toList();
     }
 
     public List<PedidoResponseDTO> buscarPorData(LocalDateTime inicio, LocalDateTime fim) {
-        return repository.findByDataPedidoBetween(inicio, fim).stream()
+        return pedidoRepository.findByDataPedidoBetween(inicio, fim).stream()
                 .map(this::converterParaDTO)
                 .toList();
     }
     
     @Transactional
-    public PedidoResponseDTO atualizarStatus(Long id, StatusPedido novoStatus) {
-        Pedido pedido = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
-        
-        pedido.setStatus(novoStatus);
-        return converterParaDTO(repository.save(pedido));
+    public PedidoResponseDTO atualizarStatus(Long pedidoId){
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+        .orElseThrow(()-> new EntityNotFoundException("Pedido não encontrado."));
+
+        StatusPedido statusAtual = pedido.getStatus();
+
+        switch(statusAtual){
+            case CONFIRMADO -> pedido.setStatus(StatusPedido.PREPARANDO);
+            case PREPARANDO -> pedido.setStatus(StatusPedido.SAIU_PARA_ENTREGA);
+            case SAIU_PARA_ENTREGA -> pedido.setStatus(StatusPedido.ENTREGUE);
+
+            case CANCELADO, ENTREGUE -> 
+                throw new BusinessException("Status do Pedido não pode mais ser avançado.");
+            default ->
+                throw new BusinessException("Status é inválido para avanço.");
+        }
+        return toResponseDTO(pedido);
+    }
+
+    @Transactional
+    public PedidoResponseDTO cancelarPedido(Long pedidoId){
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+        .orElseThrow(()-> new EntityNotFoundException("Pedido não encontrado."));
+
+        if(pedido.getStatus() == StatusPedido.ENTREGUE){
+            throw new BusinessException("Pedido entregue não pode ser cancelado.");
+        }
+
+        pedido.setStatus(StatusPedido.CANCELADO);
+        Pedido salvo = pedidoRepository.save(pedido);
+        return toResponseDTO(salvo);
     }
 
     public BigDecimal obterFaturamentoTotal(LocalDateTime inicio, LocalDateTime fim) {
-        BigDecimal total = repository.calcularTotalVendido(inicio, fim);
+        BigDecimal total = pedidoRepository.calcularTotalVendido(inicio, fim);
         return (total != null) ? total : BigDecimal.ZERO;
     }
 
     public Long contarPedidosPorStatus(StatusPedido status) {
-        return repository.countByStatus(status);
+        return pedidoRepository.countByStatus(status);
     }
 
     public List<Object[]> obterRankingProdutos() {
-        return repository.buscarProdutosMaisVendidos();
+        return pedidoRepository.buscarProdutosMaisVendidos();
     }
 }

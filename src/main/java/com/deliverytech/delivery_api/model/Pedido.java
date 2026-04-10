@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.deliverytech.delivery_api.enums.StatusPedido;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -27,43 +28,47 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name="pedido")
+@Table(name="pedidos")
 public class Pedido {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "data_pedido")
+    @Column(name="data_pedido")
     private LocalDateTime dataPedido;
 
-    @Column(name = "endereco_entrega")
+    @Column(name="endereco_entrega")
     private String enderecoEntrega;
 
-/*     @Column(name = "numero_pedido")
-    private String numeroPedido; */
 
-    @Column(name = "taxa_entrega")
+    @Column(name="taxa_entrega")
     private BigDecimal taxaEntrega;
+
+    @Column(name="valor_total")
+    private BigDecimal valorTotal;
 
     @Enumerated(EnumType.STRING)
     private StatusPedido status;
 
-    @Column(name = "valor_total")
-    private BigDecimal valorTotal;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id")
+    @JsonIgnore
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="cliente_id")
     private Cliente cliente;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurante_id")
+    @JsonIgnore
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="restaurante_id")
     private Restaurante restaurante;
+
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<ItemPedido> itens = new ArrayList<>();
+
 
     @PrePersist
     public void prePersist(){
         this.dataPedido = LocalDateTime.now();
     }
-
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ItemPedido> itens = new ArrayList<>();
 }

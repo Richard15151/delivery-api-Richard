@@ -3,11 +3,15 @@ package com.deliverytech.delivery_api.repository;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.deliverytech.delivery_api.model.Produto;
 
 public interface ProdutoRepository extends JpaRepository<Produto, Long>{
+    Page<Produto> findByCategoria(String categoria, Pageable pageable);
+    Page<Produto> findByRestauranteIdAndDisponivelTrue(Long restauranteId, Pageable pageable);
     List<Produto> findByNomeContainingIgnoreCase(String nome);
     boolean existsByNomeAndRestauranteId(String nome, Long restauranteId);
     List<Produto> findByDisponivelTrue();
