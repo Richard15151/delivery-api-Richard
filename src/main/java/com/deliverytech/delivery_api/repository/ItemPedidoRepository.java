@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.deliverytech.delivery_api.dto.responses.ItemPedidoResponseDTO;
 
-import com.deliverytech.delivery_api.dto.requests.ItemPedidoDTO;
 import com.deliverytech.delivery_api.model.ItemPedido;
 
 import org.springframework.stereotype.Repository;

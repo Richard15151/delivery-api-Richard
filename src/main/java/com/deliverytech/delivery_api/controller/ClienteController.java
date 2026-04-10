@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.deliverytech.delivery_api.dto.requests.ClienteDTO;
 import com.deliverytech.delivery_api.dto.responses.ClienteResponseDTO;
-import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.service.ClienteService;
 
 import jakarta.validation.Valid;

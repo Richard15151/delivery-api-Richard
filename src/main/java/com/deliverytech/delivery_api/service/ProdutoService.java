@@ -8,15 +8,15 @@ import org.springframework.stereotype.Service;
 
 import com.deliverytech.delivery_api.dto.requests.ProdutoDTO;
 import com.deliverytech.delivery_api.dto.responses.ProdutoResponseDTO;
-import com.deliverytech.delivery_api.dto.responses.RestauranteResponseDTO;
 import com.deliverytech.delivery_api.exception.BusinessException;
 import com.deliverytech.delivery_api.exception.EntityNotFoundException;
 import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.model.Restaurante;
 import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
+// import jakarta.transaction.Transactional;
 
 @Service
 public class ProdutoService {
@@ -53,6 +53,7 @@ public class ProdutoService {
         return mapper.map(repository.save(produto), ProdutoResponseDTO.class);
     }
 
+    @Transactional(readOnly = true)
     public List<ProdutoResponseDTO> listarDisponiveis(){
         return repository.findByDisponivelTrue().stream()
                 .map(r -> mapper.map(r, ProdutoResponseDTO.class))

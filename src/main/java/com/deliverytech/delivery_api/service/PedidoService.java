@@ -58,8 +58,12 @@ public class PedidoService {
         pedido.setCliente(cliente);
         pedido.setRestaurante(restaurante);
         pedido.setEnderecoEntrega(dto.getEnderecoEntrega());
-        pedido.setTaxaEntrega(restaurante.getTaxaEntrega());
         pedido.setStatus(StatusPedido.PENDENTE);
+        
+        pedido.setDataPedido(LocalDateTime.now());
+
+        BigDecimal taxa = restaurante.getTaxaEntrega() != null ? restaurante.getTaxaEntrega() : BigDecimal.ZERO;
+        pedido.setTaxaEntrega(taxa);
 
         BigDecimal subtotalGeral = BigDecimal.ZERO;
 
@@ -77,13 +81,14 @@ public class PedidoService {
             item.setProduto(produto);
             item.setQuantidade(itemDto.getQuantidade());
             item.setPrecoUnitario(produto.getPreco());
-            item.setSubtotal(produto.getPreco().multiply(BigDecimal.valueOf(itemDto.getQuantidade())));
+            
+            BigDecimal subtotalItem = produto.getPreco().multiply(BigDecimal.valueOf(itemDto.getQuantidade()));
+            item.setSubtotal(subtotalItem);
             item.setPedido(pedido);
             
             pedido.getItens().add(item);
-            subtotalGeral = subtotalGeral.add(item.getSubtotal());
+            subtotalGeral = subtotalGeral.add(subtotalItem);
         }
-
         pedido.setValorTotal(subtotalGeral.add(pedido.getTaxaEntrega()));
         
         Pedido pedidoSalvo = repository.save(pedido);
