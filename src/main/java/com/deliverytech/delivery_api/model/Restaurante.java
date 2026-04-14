@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.deliverytech.delivery_api.enums.CategoriaRestaurante;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -26,15 +28,15 @@ public class Restaurante {
 
     private String nome;
 
-    private String categoria;
+    private CategoriaRestaurante categoria;
 
     private String endereco;
 
     private String telefone;
 
-    private BigDecimal avaliacao;
-
     private BigDecimal taxaEntrega;
+
+    private BigDecimal avaliacao;
 
     private boolean ativo;
 
