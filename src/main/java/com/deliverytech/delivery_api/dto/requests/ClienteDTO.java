@@ -1,7 +1,6 @@
 package com.deliverytech.delivery_api.dto.requests;
 
 import com.deliverytech.delivery_api.validation.TelefoneValido;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,27 +10,41 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Schema(description="Dados para cadastro/atualização de cliente.")
+@Schema(name = "ClienteRequest", description = "Objeto de transferência para criação ou atualização de um cliente")
 public class ClienteDTO {
 
-    @Schema(description="Nome do cliente", example="Elaine Soares")
+    @Schema(
+        description = "Nome completo do cliente", 
+        example = "Richard Oliveira", 
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     @NotBlank(message = "Campo nome é obrigatório.")
     private String nome;
 
-    @Schema(description="E-mail do cliente", example="elaine@gmail.com")
+    @Schema(
+        description = "Endereço de e-mail único para login e comunicações", 
+        example = "elaine@gmail.com", 
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     @Email(message = "E-mail inválido.")
     @NotBlank(message = "Campo e-mail é obrigatório.")
     private String email;
 
-    @Schema(description="Telefone/celular do cliente", example="(xx)xxxxx-xxxx")
-    /* @Pattern(regexp="^\\(\\d{2}\\)\\d{4,5}-\\d{4}$",
-        message="Formato de telefone inválido. Use (xx)xxxxx-xxxx"
-    ) */
+    @Schema(
+        description = "Telefone de contato formatado", 
+        example = "(11) 98765-4321", 
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     @TelefoneValido
-    @NotBlank(message="Campo telefone é obrigatório.")
+    @NotBlank(message = "Campo telefone é obrigatório.")
     private String telefone;
 
-    @Schema(description="Endereço do cliente", example="rua/av teste, 123")
-    @Size(min= 5, message="Endereço deve ter no mínimo 5 caracteres")
+    @Schema(
+        description = "Endereço residencial para entregas", 
+        example = "Rua das Flores, 123 - Centro", 
+        minLength = 5, 
+        maxLength = 255
+    )
+    @Size(min = 5, message = "Endereço deve ter no mínimo 5 caracteres")
     private String endereco;
 }

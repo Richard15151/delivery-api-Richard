@@ -14,17 +14,17 @@ import org.springframework.web.bind.annotation.*;
 import com.deliverytech.delivery_api.dto.requests.PedidoDTO;
 import com.deliverytech.delivery_api.dto.responses.PagedResponse;
 import com.deliverytech.delivery_api.dto.responses.PedidoResponseDTO;
-import com.deliverytech.delivery_api.dto.responses.ApiResponse;
-import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.service.PedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping(value = "/pedidos", produces = "application/json")
-@Tag(name = "Pedidos", description = "Endpoints para fluxo de compras.")
+@RequestMapping(value = "/api/pedidos", produces = "application/json")
+@Tag(name = "Pedidos", description = "Endpoints para processamento de ordens de compra e gestão do fluxo de entrega.")
 @CrossOrigin(origins = "*")
 public class PedidoController {
 
@@ -34,22 +34,28 @@ public class PedidoController {
         this.pedidoService = pedidoService;
     }
 
-    @Operation(summary = "Criar um novo pedido.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "201", 
-        description = "Pedido criado com sucesso."
-    )
+    @Operation(summary = "Criar um novo pedido", description = "Envia um carrinho para processamento. Valida estoque e disponibilidade do restaurante.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Erro nos dados enviados ou item indisponível")
+    })
     @PostMapping
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> criar(@RequestBody @Valid PedidoDTO dto) {
-        return ResponseEntity.ok(new ApiResponse<>(pedidoService.criarPedido(dto)));
+    public ResponseEntity<PedidoResponseDTO> criar(@RequestBody @Valid PedidoDTO dto) {
+        PedidoResponseDTO resultado = pedidoService.criarPedido(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 
+    @Operation(summary = "Buscar pedido por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Pedido encontrado"),
+        @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
     @GetMapping("/{id}")
-    public PedidoResponseDTO buscarPorId(@PathVariable Long id) {
-        return pedidoService.buscarPedidoPorId(id);
+    public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.buscarPedidoPorId(id));
     }
 
-    @Operation(summary = "Listar histórico de pedidos do cliente (paginado).")
+    @Operation(summary = "Listar histórico do cliente (Paginado)")
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<PagedResponse<PedidoResponseDTO>> listarPorCliente(
             @PathVariable Long clienteId,
@@ -60,57 +66,33 @@ public class PedidoController {
         return ResponseEntity.ok(new PagedResponse<>(pedidoService.listarPorCliente(clienteId, pageable)));
     }
 
-    @Operation(summary = "Confirmar um pedido (Aceite do restaurante).")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200", 
-            description = "Pedido confirmado com sucesso."
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400", 
-            description = "Pedido não está em estado PENDENTE."
-        )
+    @Operation(summary = "Confirmar pedido", description = "Muda o status do pedido de PENDENTE para CONFIRMADO (Aceite do Restaurante).")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Pedido confirmado"),
+        @ApiResponse(responseCode = "400", description = "O pedido não está mais pendente")
     })
     @PutMapping("/{id}/confirmar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> confirmar(@PathVariable Long id) {
-        var resultado = pedidoService.confirmarPedido(id);
-        return ResponseEntity.ok(new ApiResponse<>(resultado));
+    public ResponseEntity<PedidoResponseDTO> confirmar(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.confirmarPedido(id));
     }
 
-
-    @Operation(summary = "Avançar o status do pedido (Fluxo: CONFIRMADO -> PREPARANDO -> ENTREGA).")
+    @Operation(summary = "Avançar status da entrega", description = "Move o pedido pelo fluxo: CONFIRMADO -> PREPARANDO -> EM ENTREGA -> ENTREGUE.")
     @PatchMapping("/{id}/status/avancar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> avancarStatus(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(pedidoService.atualizarStatus(id)));
+    public ResponseEntity<PedidoResponseDTO> avancarStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.atualizarStatus(id));
     }
 
-    @Operation(summary = "Cancelar um pedido.")
+    @Operation(summary = "Cancelar pedido", description = "Cancela o pedido. Só pode ser feito antes do status PREPARANDO.")
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> cancelar(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(pedidoService.cancelarPedido(id)));
+    public ResponseEntity<PedidoResponseDTO> cancelar(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.cancelarPedido(id));
     }
 
+    @Operation(summary = "Filtrar pedidos por período")
     @GetMapping("/periodo")
-    public List<PedidoResponseDTO> listarPorPeriodo(
+    public ResponseEntity<List<PedidoResponseDTO>> listarPorPeriodo(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
-        return pedidoService.buscarPorPeriodo(inicio, fim);
-    }
-
-    @GetMapping("/relatorios/faturamento")
-    public ResponseEntity<BigDecimal> getFaturamento(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
-        return ResponseEntity.ok(pedidoService.obterFaturamentoTotal(inicio, fim));
-    }
-
-    @GetMapping("/relatorios/estatisticas")
-    public ResponseEntity<Long> getQuantidadePorStatus(@RequestParam StatusPedido status) {
-        return ResponseEntity.ok(pedidoService.contarPedidosPorStatus(status));
-    }
-
-    @GetMapping("/relatorios/ranking-produtos")
-    public ResponseEntity<List<Object[]>> getRanking() {
-        return ResponseEntity.ok(pedidoService.obterRankingProdutos());
+        return ResponseEntity.ok(pedidoService.buscarPorPeriodo(inicio, fim));
     }
 }

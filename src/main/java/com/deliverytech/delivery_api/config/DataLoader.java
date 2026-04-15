@@ -103,14 +103,7 @@ public class DataLoader {
             System.out.println("======Consultando Restaurante======");
 
             System.out.println("> Buscar Restaurante por Categoria:");
-
-            /* restauranteRepository.findByCategoria("Hamburgueria")
-            .forEach(c -> System.out.println("Restaurante(Hamburgueria): " + c.getNome()));
-
-            System.out.println("> Restaurantes ativos:");
-            restauranteRepository.findByAtivoTrue()
-                .forEach(r -> System.out.println(r.getNome())); */
-
+            
             System.out.println("=====Inserindo Produtos ======");
 
             Produto p1 = new Produto();

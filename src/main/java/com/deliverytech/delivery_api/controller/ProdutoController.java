@@ -6,66 +6,63 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.deliverytech.delivery_api.dto.requests.ProdutoDTO;
 import com.deliverytech.delivery_api.dto.responses.PagedResponse;
 import com.deliverytech.delivery_api.dto.responses.ProdutoResponseDTO;
-import com.deliverytech.delivery_api.dto.responses.ApiResponse;
 import com.deliverytech.delivery_api.service.ProdutoService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping(value = "/produtos", produces = "application/json")
-@Tag(name = "Produtos", description = "Endpoints para gerenciamento do cardápio.")
+@RequestMapping(value = "/api/produtos", produces = "application/json")
+@Tag(name = "Produtos", description = "Endpoints para gerenciamento do cardápio e disponibilidade de itens.")
 @CrossOrigin(origins = "*")
 public class ProdutoController {
+
     private final ProdutoService produtoService;
 
     public ProdutoController(ProdutoService produtoService) {
         this.produtoService = produtoService;
     }
 
-    @Operation(summary = "Cadastrar novo produto em um restaurante.")
-    @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Produto criado."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Restaurante não encontrado.")
+    @Operation(summary = "Cadastrar novo produto", description = "Vincula um novo produto a um restaurante específico.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Produto criado com sucesso"),
+        @ApiResponse(responseCode = "404", description = "Restaurante não encontrado")
     })
     @PostMapping("/restaurante/{restauranteId}")
-    public ResponseEntity<ApiResponse<ProdutoResponseDTO>> cadastrar(
-            @PathVariable Long restauranteId, 
+    public ResponseEntity<ProdutoResponseDTO> cadastrar(
+            @Parameter(description = "ID do restaurante dono do produto") @PathVariable Long restauranteId, 
             @RequestBody @Valid ProdutoDTO produto) {
         
         ProdutoResponseDTO resposta = produtoService.cadastrar(restauranteId, produto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(resposta));
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
+    @Operation(summary = "Listar todos os produtos disponíveis", description = "Retorna uma lista simples de todos os itens ativos no sistema.")
     @GetMapping
-    public List<ProdutoResponseDTO> listarDisponiveis(){
-        return produtoService.listarDisponiveis();
+    public ResponseEntity<List<ProdutoResponseDTO>> listarDisponiveis() {
+        return ResponseEntity.ok(produtoService.listarDisponiveis());
     }
 
+    @Operation(summary = "Buscar produto por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Sucesso"),
+        @ApiResponse(responseCode = "404", description = "Produto não encontrado")
+    })
     @GetMapping("/{id}")
-    public ProdutoResponseDTO buscarPorId(@PathVariable Long id) {
-        return produtoService.buscarPorId(id);
+    public ResponseEntity<ProdutoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(produtoService.buscarPorId(id));
     }
 
-    @Operation(summary = "Listar produtos disponíveis de um restaurante (paginado).")
+    @Operation(summary = "Listar produtos por restaurante (Paginado)")
     @GetMapping("/restaurante/{restauranteId}")
     public ResponseEntity<PagedResponse<ProdutoResponseDTO>> listarPorRestaurante(
             @PathVariable Long restauranteId,
@@ -73,26 +70,32 @@ public class ProdutoController {
             @RequestParam(defaultValue = "10") int size) {
         
         Pageable pageable = PageRequest.of(page, size);
-        var pageResult = produtoService.listarPorRestaurante(restauranteId, pageable);
-        return ResponseEntity.ok(new PagedResponse<>(pageResult));
+        return ResponseEntity.ok(new PagedResponse<>(produtoService.listarPorRestaurante(restauranteId, pageable)));
     }
 
+    @Operation(summary = "Buscar produtos por categoria")
     @GetMapping("/categoria/{categoria}")
-    public List<ProdutoResponseDTO> buscarPorCategoria(@PathVariable String categoria) {
-        return produtoService.buscarProdutosPorCategoria(categoria);
+    public ResponseEntity<List<ProdutoResponseDTO>> buscarPorCategoria(@PathVariable String categoria) {
+        return ResponseEntity.ok(produtoService.buscarProdutosPorCategoria(categoria));
     }
 
-    @Operation(summary = "Alternar disponibilidade do produto.")
-    @PatchMapping("/{produtoId}/disponibilidade")
-    public ResponseEntity<ApiResponse<ProdutoResponseDTO>> toggleDisponibilidade(@PathVariable Long produtoId) {
-        return ResponseEntity.ok(new ApiResponse<>(produtoService.toggleDisponibilidade(produtoId)));
+    @Operation(summary = "Alternar disponibilidade", description = "Ativa ou desativa um produto para venda no cardápio.")
+    @PatchMapping("/{id}/disponibilidade")
+    public ResponseEntity<ProdutoResponseDTO> toggleDisponibilidade(@PathVariable Long id) {
+        return ResponseEntity.ok(produtoService.toggleDisponibilidade(id));
     }
 
+    @Operation(summary = "Atualizar dados do produto")
     @PutMapping("/{id}")
-    public ProdutoResponseDTO atualizar(@PathVariable Long id, @Valid @RequestBody ProdutoDTO dto) {
-        return produtoService.atualizarProduto(id, dto);
+    public ResponseEntity<ProdutoResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody ProdutoDTO dto) {
+        return ResponseEntity.ok(produtoService.atualizarProduto(id, dto));
     }
 
+    @Operation(summary = "Remover produto")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Produto deletado"),
+        @ApiResponse(responseCode = "404", description = "Produto não encontrado")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         produtoService.deletar(id);

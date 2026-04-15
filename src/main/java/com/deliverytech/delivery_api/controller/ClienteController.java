@@ -1,23 +1,10 @@
 package com.deliverytech.delivery_api.controller;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.deliverytech.delivery_api.dto.requests.ClienteDTO;
 import com.deliverytech.delivery_api.dto.responses.ClienteResponseDTO;
@@ -32,81 +19,63 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/clientes")
-@Tag(name="Clientes", description="Endpoints para gerencimento de clientes.")
+@Tag(name = "Clientes", description = "Gerenciamento de clientes da plataforma")
 public class ClienteController {
-    private ClienteService service;
 
-    public ClienteController ( ClienteService service){
+    private final ClienteService service;
+
+    public ClienteController(ClienteService service) {
         this.service = service;
     }
 
-    @Operation(summary="Cadastrar novo cliente.")
-    @ApiResponses(
-        value={
-            @ApiResponse(responseCode="201", description="Clientes Cadastrado com sucesso."),
-            @ApiResponse(responseCode="400", description="Erro de validação."),
-        }
-    )
-    @PostMapping("/cadastrar")
-    public ResponseEntity<ClienteResponseDTO> cadastrar(@Valid @RequestBody ClienteDTO dto ){
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(dto));
+    @Operation(summary = "Cadastrar novo cliente")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Cliente criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    @PostMapping
+    public ResponseEntity<ClienteResponseDTO> cadastrar(@Valid @RequestBody ClienteDTO dto) {
+        ClienteResponseDTO resultado = service.cadastrar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 
-    @Operation(summary="Listar clientes ativos.")
-    @ApiResponses(
-        value={
-            @ApiResponse(responseCode="200", description="Lista de clientes ativos retornado."),
-            @ApiResponse(responseCode="404", description="Cliente não encontrado."),
-        }
-    )
+    @Operation(summary = "Buscar cliente por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
+        @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable Long id) {
+        ClienteResponseDTO resultado = service.buscarPorId(id);
+        return ResponseEntity.ok(resultado);
+    }
+
+    @Operation(summary = "Listar clientes ativos (Paginado)")
     @GetMapping
     public ResponseEntity<PagedResponse<ClienteResponseDTO>> listarAtivos(
-        @RequestParam(defaultValue="0") int page,
-        @RequestParam(defaultValue="10")int size
-    ){
-
-        Pageable pageable = PageRequest.of(page, size);
-        var pageResponse = new PagedResponse<>(service.listarAtivos(pageable));
-
-        return ResponseEntity.ok()
-        .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         
-        .header("Content-Type", "application/json").body(pageResponse);
-
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(new PagedResponse<>(service.listarAtivos(pageable)));
     }
 
-    @Operation(summary="Buscar cliente por Id.")
-    @ApiResponses(
-        value={
-            @ApiResponse(responseCode="200", description="Cliente encontrado com sucesso."),
-            @ApiResponse(responseCode="404", description="Cliente não encontrado com Id mencionado."),
-        }
-    )
-    @GetMapping("/{id}")
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ClienteResponseDTO>> buscarPorId(@PathVariable Long id){
-        return ResponseEntity.ok().header("Content-Type", "application/json").body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>( service.buscarPorId(id)));  
+    @Operation(summary = "Alternar status (Ativo/Inativo)")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ClienteResponseDTO> alternarStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(service.alternarStatus(id));
     }
 
-    @Operation(summary="Ativar ou desativar cliente.")
-    @ApiResponses(
-        value={
-            @ApiResponse(responseCode="200" ),
-            @ApiResponse(responseCode="404", description="Cliente não encontrado com Id mencionado."),
-        }
-    )
-    @PutMapping("/{id}/inativar-cliente")
-    public  ClienteResponseDTO inativar(@PathVariable Long id){
-        return service.alternarStatus(id);
+    @Operation(summary = "Atualizar dados do cliente")
+    @PutMapping("/{id}")
+    public ResponseEntity<ClienteResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody ClienteDTO dados) {
+        return ResponseEntity.ok(service.atualizar(id, dados));
     }
 
-    @PutMapping("/{id}/atualizar-dados-clientes")
-    public ClienteResponseDTO atualizar(@PathVariable Long id, @RequestBody ClienteDTO dados){
-        return service.atualizar(id, dados);
-    }
-
-    @DeleteMapping("/{id}/deletar-cliente")
+    @Operation(summary = "Remover cliente")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
-        return ResponseEntity.noContent().build(); 
+        return ResponseEntity.noContent().build();
     }
 }

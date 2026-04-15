@@ -2,6 +2,7 @@ package com.deliverytech.delivery_api.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -125,4 +126,16 @@ public class RestauranteService {
         return mapper.map(restaurante, RestauranteResponseDTO.class);
     }
 
+    public List<RestauranteResponseDTO> buscarProximos(String cep) {
+    String prefixo = cep.substring(0, 5);
+    List<Restaurante> restaurantes = repository.findByEnderecoContaining(prefixo);
+    return restaurantes.stream()
+            .map(r -> {
+                RestauranteResponseDTO dto = new RestauranteResponseDTO();
+                dto.setId(r.getId());
+                dto.setNome(r.getNome());
+                return dto;
+            })
+            .toList();
+    }
 }
