@@ -54,7 +54,7 @@ public class RestauranteDTO {
 
     @Schema(
         description = "Taxa de entrega do restaurante", 
-        example = "14,99", 
+        example = "14.99", 
         requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotNull(message = "A taxa de entrega é obrigatória")

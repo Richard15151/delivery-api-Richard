@@ -123,10 +123,12 @@ public class PedidoService {
             .map(this::toResponseDTO);
     }
 
+    @Transactional(readOnly = true) 
     public PedidoResponseDTO buscarPedidoPorId(Long id) {
-    Pedido pedido = pedidoRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado com o ID: " + id));
-    return converterParaDTO(pedido);
+        Pedido pedido = pedidoRepository.buscarCompletoPorId(id)
+                .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
+        
+        return mapper.map(pedido, PedidoResponseDTO.class);
     }
 
     private PedidoResponseDTO converterParaDTO(Pedido pedido) {
@@ -152,8 +154,11 @@ public class PedidoService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PedidoResponseDTO> buscarPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
-        return pedidoRepository.findByDataPedidoBetween(inicio, fim).stream()
+        List<Pedido> pedidos = pedidoRepository.findByDataPedidoBetween(inicio, fim);
+        
+        return pedidos.stream()
                 .map(this::converterParaDTO)
                 .toList();
     }

@@ -38,12 +38,13 @@ public class ProdutoService {
     }
 
     private ProdutoResponseDTO returnResponseDTO(Produto p) {
-        ProdutoResponseDTO dto = mapper.map(p, ProdutoResponseDTO.class);
-        if (p.getRestaurante() != null) {
-            dto.setRestauranteId(p.getRestaurante().getId());
-        }
-        return dto;
+    ProdutoResponseDTO dto = mapper.map(p, ProdutoResponseDTO.class);
+    if (p.getRestaurante() != null) {
+        dto.setRestauranteId(p.getRestaurante().getId());
+        dto.setRestauranteNome(p.getRestaurante().getNome());
     }
+    return dto;
+}
 
     @Transactional
     public ProdutoResponseDTO cadastrar(Long restauranteId, ProdutoDTO produto) {
@@ -64,16 +65,18 @@ public class ProdutoService {
     @Transactional(readOnly = true)
     public List<ProdutoResponseDTO> listarDisponiveis(){
         return produtoRepository.findByDisponivelTrue().stream()
-                .map(r -> mapper.map(r, ProdutoResponseDTO.class))
+                .map(this::returnResponseDTO)
                 .collect(Collectors.toList());
     }
 
     public ProdutoResponseDTO buscarPorId(Long id) {
-        Produto p = produtoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
-        return returnResponseDTO(p);
+    Produto p = produtoRepository.buscarComRestaurante(id) 
+            .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
+    
+    return returnResponseDTO(p);
     }
 
+    @Transactional(readOnly = true)
     public Page<ProdutoResponseDTO> listarPorRestaurante(Long restauranteId, Pageable pageable) {
         if (!restauranteRepository.existsById(restauranteId)) {
             throw new EntityNotFoundException("Restaurante não localizado.");
@@ -82,9 +85,11 @@ public class ProdutoService {
                 .map(this::returnResponseDTO);
     }
 
+    @Transactional(readOnly = true)
     public List<ProdutoResponseDTO> buscarProdutosPorCategoria(String categoria) {
         return produtoRepository.findByCategoriaIgnoreCase(categoria).stream()
-                .map(p -> mapper.map(p, ProdutoResponseDTO.class)).toList();
+                .map(this::returnResponseDTO)   
+                .toList();
     }
 
     @Transactional
@@ -104,7 +109,7 @@ public class ProdutoService {
         produto.setPreco(dto.getPreco());
         produto.setCategoria(dto.getCategoria());
 
-        return mapper.map(produtoRepository.save(produto), ProdutoResponseDTO.class);
+        return returnResponseDTO(produtoRepository.save(produto));
     }
 
     @Transactional

@@ -28,7 +28,7 @@ public class RestauranteResponseDTO {
     @Schema(description = "Avaliação do restaurante", example = "9.5")
     private BigDecimal avaliacao;
 
-    @Schema(description = "Taxa de entrega do restaurante", example = "14,99")
+    @Schema(description = "Taxa de entrega do restaurante", example = "14.99")
     private BigDecimal taxaEntrega;
 
     @Schema(description = "Indica se o restaurante está com o cadastro ativo no sistema", example = "true")

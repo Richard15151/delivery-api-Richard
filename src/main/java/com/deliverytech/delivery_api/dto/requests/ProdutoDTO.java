@@ -38,7 +38,7 @@ public class ProdutoDTO {
 
     @Schema(
         description = "Preço do produto", 
-        example = "Comida Japonesa", 
+        example = "24.99", 
         requiredMode = Schema.RequiredMode.REQUIRED
     )
     @Positive(message = "O preço deve ser maior que zero")

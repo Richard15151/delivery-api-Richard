@@ -1,6 +1,7 @@
 package com.deliverytech.delivery_api.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +17,12 @@ import com.deliverytech.delivery_api.model.Pedido;
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByClienteId(Long clienteId);
     List<Pedido> findByStatus(StatusPedido status);
-    List<Pedido> findByDataPedidoBetween(LocalDateTime inicio, LocalDateTime fim);
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+       "JOIN FETCH p.cliente " +
+       "JOIN FETCH p.itens i " +
+       "JOIN FETCH i.produto " +
+       "WHERE p.dataPedido BETWEEN :inicio AND :fim")
+    List<Pedido> findByDataPedidoBetween(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
     List<Pedido> findByClienteIdAndStatus(Long clienteId, StatusPedido status);
     List<Pedido> findTop10ByOrderByDataPedidoDesc();
     
@@ -70,4 +76,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
                         ORDER BY total_pedidos DESC
                 """, nativeQuery = true )
             List<Object[]> rankingClientes();
+
+    @Query("SELECT p FROM Pedido p " +
+       "JOIN FETCH p.cliente " +
+       "JOIN FETCH p.itens i " +
+       "JOIN FETCH i.produto " + 
+       "WHERE p.id = :id")
+    Optional<Pedido> buscarCompletoPorId(@Param("id") Long id);
 }

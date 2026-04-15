@@ -16,10 +16,13 @@ public class ProdutoResponseDTO {
     @Schema(description = "Nome completo do produto", example = "Marmita de Feijoada")
     private String nome;
 
+    @Schema(description = "categoria do produto", example = "Comida japonesa")
+    private String categoria;
+
     @Schema(description = "Descrição do produto", example = "Marmita de 500g, serve uma pessoa")
     private String descricao;
 
-    @Schema(description = "preço do produto", example = "19,99")
+    @Schema(description = "preço do produto", example = "19.99")
     private BigDecimal preco;
 
     @Schema(description = "Indica se o produto está disponível no sistema", example = "true")
