@@ -36,41 +36,56 @@ public class RestauranteController {
         this.service = service;
     }
 
-    @Operation(summary = "Cadastrar novo restaurante", description = "Registra um restaurante parceiro. Retorna a URI do novo recurso no header Location.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Restaurante cadastrado com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "409", description = "Conflito: Nome já existente")
+     @Operation(summary = "Cadastrar novo restaurante.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Restaurante cadastrado com sucesso."),
+        @ApiResponse(responseCode = "400", description = "Erro de validação nos campos enviados."),
+        @ApiResponse(responseCode = "409", description = "Conflito: Nome de restaurante já existente.")
     })
     @PostMapping
-    public ResponseEntity<RestauranteResponseDTO> cadastrar(@Valid @RequestBody RestauranteDTO dados) {
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> cadastrar(@Valid @RequestBody RestauranteDTO dados) {
         RestauranteResponseDTO response = service.cadastrar(dados);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}").buildAndExpand(response.getId()).toUri();
-        
-        return ResponseEntity.created(location).body(response);
+
+        URI location = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(response.getId())
+            .toUri();
+
+        return ResponseEntity.created(location)
+            .header("Content-Type", "application/json")
+            .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(response));
     }
 
-    @Operation(summary = "Listar restaurantes ativos (Paginado)")
-    @GetMapping
-    public ResponseEntity<PagedResponse<RestauranteResponseDTO>> listar(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(new PagedResponse<>(service.listarAtivos(pageable)));
-    }
-
-    @Operation(summary = "Buscar restaurante por ID")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Sucesso"),
-        @ApiResponse(responseCode = "404", description = "Restaurante não encontrado")
+    @Operation(summary = "Listar restaurantes ativos (paginado).")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de restaurantes retornada com sucesso.")
     })
-    @GetMapping("/{id}")
-    public ResponseEntity<RestauranteResponseDTO> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(service.buscarPorId(id));
+    @GetMapping("/listar")
+    public ResponseEntity<PagedResponse<RestauranteResponseDTO>> listar(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        var pageResult = service.listarAtivos(pageable);
+        var response = new PagedResponse<>(pageResult);
+        
+        return ResponseEntity.ok()
+            .header("Content-Type", "application/json")
+            .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+            .body(response);
+    }
+
+    @Operation(summary = "Buscar restaurante por Id.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurante encontrado com sucesso."),
+        @ApiResponse(responseCode = "404", description = "Restaurante não encontrado.")
+    })
+    @GetMapping("/{id}/buscar-restaurante-por-id")
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok()
+            .header("Content-Type", "application/json")
+            .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.buscarPorId(id)));
     }
 
     @Operation(summary = "Pesquisar restaurantes por nome", description = "Busca textual simples pelo nome do estabelecimento.")
@@ -79,15 +94,23 @@ public class RestauranteController {
         return ResponseEntity.ok(service.buscarPorNome(nome));
     }
 
-    @Operation(summary = "Filtrar por categoria (Paginado)")
+    @Operation(summary = "Buscar restaurantes por categoria (paginado).")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso.")
+    })
     @GetMapping("/categoria")
     public ResponseEntity<PagedResponse<RestauranteResponseDTO>> buscarPorCategoria(
-            @RequestParam String categoria,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        
+        @RequestParam String categoria,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(new PagedResponse<>(service.buscarPorCategoria(categoria, pageable)));
+        var pageResult = service.buscarPorCategoria(categoria, pageable);
+        var response = new PagedResponse<>(pageResult);
+        
+        return ResponseEntity.ok()
+            .header("Content-Type", "application/json")
+            .body(response);
     }
 
     @Operation(summary = "Ver ranking de restaurantes", description = "Lista os restaurantes com melhor avaliação ou volume de vendas.")
@@ -96,10 +119,16 @@ public class RestauranteController {
         return ResponseEntity.ok(service.listarRanking());
     }
 
-    @Operation(summary = "Alternar status (Ativar/Inativar)")
+    @Operation(summary = "Ativar ou desativar restaurante.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Status alterado com sucesso."),
+        @ApiResponse(responseCode = "404", description = "Restaurante não encontrado.")
+    })
     @PatchMapping("/{id}/toggle")
-    public ResponseEntity<RestauranteResponseDTO> toggle(@PathVariable Long id) {
-        return ResponseEntity.ok(service.toggle(id));
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> toggle(@PathVariable Long id) {
+        return ResponseEntity.ok()
+            .header("Content-Type", "application/json")
+            .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.toggle(id)));
     }
 
     @Operation(summary = "Atualizar dados do restaurante")
@@ -116,7 +145,7 @@ public class RestauranteController {
         return ResponseEntity.ok(service.calcularTaxaEntrega(id, cep));
     }
 
-@Operation(
+    @Operation(
         summary = "Listar restaurantes próximos", 
         description = "Busca estabelecimentos que atendem na região do CEP informado (baseado nos 5 primeiros dígitos)."
     )
