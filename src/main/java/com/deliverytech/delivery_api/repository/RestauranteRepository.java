@@ -21,4 +21,5 @@ public interface RestauranteRepository extends JpaRepository<Restaurante, Long>{
     List<Restaurante> findByTaxaEntregaLessThanEqual(BigDecimal taxaEntrega);
     List<Restaurante> findTop5ByOrderByNomeAsc();
     List<Restaurante> findByEnderecoContaining(String prefixo);
+    boolean existsByUsuario_Id(Long usuarioId);
 }

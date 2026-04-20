@@ -12,6 +12,7 @@ import com.deliverytech.delivery_api.dto.responses.ClienteResponseDTO;
 import com.deliverytech.delivery_api.exception.BusinessException;
 import com.deliverytech.delivery_api.exception.EntityNotFoundException;
 import com.deliverytech.delivery_api.model.Cliente;
+import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 
 import jakarta.transaction.Transactional;
@@ -43,21 +44,31 @@ public class ClienteService {
             .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
     }
 
-    @Transactional
-    public ClienteResponseDTO cadastrar(ClienteDTO dto){
-        if( repository.existsByEmail(dto.getEmail()) ){
-            throw new BusinessException("E-mail já cadastrado.");
+     @Transactional
+    public ClienteResponseDTO cadastrar(ClienteDTO dto, Usuario usuarioLogado) {
+
+        if (usuarioLogado == null) {
+            throw new BusinessException("Usuário não autenticado.");
         }
+
+        if (!usuarioLogado.getRole().name().equals("CLIENTE")
+            && !usuarioLogado.getRole().name().equals("ADMIN")) {
+            throw new BusinessException("Apenas CLIENTE ou ADMIN podem criar perfil de cliente.");
+        }
+
+        if (repository.existsByUsuario_Id(usuarioLogado.getId())) {
+            throw new BusinessException("Cliente já cadastrado para este usuário.");
+        }
+
         Cliente cliente = mapper.map(dto, Cliente.class);
+
+        cliente.setUsuario(usuarioLogado);
+        cliente.setEmail(usuarioLogado.getEmail());
         cliente.setAtivo(true);
+
         Cliente salvo = repository.save(cliente);
 
         return mapper.map(salvo, ClienteResponseDTO.class);
-    }
-
-    public Page<ClienteResponseDTO> listarAtivos(Pageable pageable){
-        return repository.findByAtivoTrue(pageable)
-        .map(clientes -> mapper.map(clientes, ClienteResponseDTO.class));
     }
 
     @Transactional
@@ -82,9 +93,14 @@ public class ClienteService {
 
     @Transactional
     public void deletar(Long id){
-        if (!repository.existsById(id)) {
+        if (!repository.existsByUsuario_Id(id)) {
             throw new EntityNotFoundException("Cliente não encontrado para exclusão.");
         }
         repository.deleteById(id);
+    }
+
+    public Page<ClienteResponseDTO> listarAtivos(Pageable pageable) {
+    Page<Cliente> clientes = repository.findByAtivoTrue(pageable);
+    return clientes.map(cliente -> mapper.map(cliente, ClienteResponseDTO.class));
     }
 }

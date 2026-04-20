@@ -9,12 +9,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.deliverytech.delivery_api.dto.requests.RestauranteDTO;
 import com.deliverytech.delivery_api.dto.responses.PagedResponse;
 import com.deliverytech.delivery_api.dto.responses.RestauranteResponseDTO;
+import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.service.RestauranteService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,26 +38,28 @@ public class RestauranteController {
         this.service = service;
     }
 
-     @Operation(summary = "Cadastrar novo restaurante.")
+    @Operation(summary = "Cadastrar novo restaurante.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Restaurante cadastrado com sucesso."),
         @ApiResponse(responseCode = "400", description = "Erro de validação nos campos enviados."),
         @ApiResponse(responseCode = "409", description = "Conflito: Nome de restaurante já existente.")
     })
     @PostMapping
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> cadastrar(@Valid @RequestBody RestauranteDTO dados) {
-        RestauranteResponseDTO response = service.cadastrar(dados);
+     public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> cadastrar(
+                @Valid @RequestBody RestauranteDTO dados,
+                @AuthenticationPrincipal Usuario usuarioLogado) {
 
-        URI location = ServletUriComponentsBuilder
-            .fromCurrentRequest()
-            .path("/{id}")
-            .buildAndExpand(response.getId())
-            .toUri();
+                RestauranteResponseDTO response = service.cadastrar(dados, usuarioLogado);
 
-        return ResponseEntity.created(location)
-            .header("Content-Type", "application/json")
-            .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(response));
-    }
+                URI location = ServletUriComponentsBuilder
+                        .fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(response.getId())
+                        .toUri();
+
+                return ResponseEntity.created(location)
+                        .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(response));
+        }
 
     @Operation(summary = "Listar restaurantes ativos (paginado).")
     @ApiResponses(value = {
@@ -125,11 +129,14 @@ public class RestauranteController {
         @ApiResponse(responseCode = "404", description = "Restaurante não encontrado.")
     })
     @PatchMapping("/{id}/toggle")
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> toggle(@PathVariable Long id) {
-        return ResponseEntity.ok()
-            .header("Content-Type", "application/json")
-            .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.toggle(id)));
-    }
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> toggle(
+                @PathVariable Long id,
+                @AuthenticationPrincipal Usuario usuarioLogado) {
+
+                return ResponseEntity.ok(
+                        new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.toggle(id, usuarioLogado))
+                );
+        }
 
     @Operation(summary = "Atualizar dados do restaurante")
     @PutMapping("/{id}")

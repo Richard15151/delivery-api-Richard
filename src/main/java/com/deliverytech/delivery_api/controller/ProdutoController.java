@@ -6,11 +6,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.deliverytech.delivery_api.dto.requests.ProdutoDTO;
 import com.deliverytech.delivery_api.dto.responses.PagedResponse;
 import com.deliverytech.delivery_api.dto.responses.ProdutoResponseDTO;
+import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.service.ProdutoService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,19 +35,24 @@ public class ProdutoController {
         this.produtoService = produtoService;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','RESTAURANTE')")
     @Operation(summary = "Cadastrar novo produto", description = "Vincula um novo produto a um restaurante específico.")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Produto criado com sucesso"),
         @ApiResponse(responseCode = "404", description = "Restaurante não encontrado")
     })
     @PostMapping("/restaurante/{restauranteId}")
-    public ResponseEntity<ProdutoResponseDTO> cadastrar(
-            @Parameter(description = "ID do restaurante dono do produto") @PathVariable Long restauranteId, 
-            @RequestBody @Valid ProdutoDTO produto) {
-        
-        ProdutoResponseDTO resposta = produtoService.cadastrar(restauranteId, produto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
-    }
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ProdutoResponseDTO>> cadastrar(
+             @PathVariable Long restauranteId,
+                @RequestBody @Valid ProdutoDTO produto,
+                @AuthenticationPrincipal Usuario usuarioLogado) {
+
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(
+                                produtoService.cadastrar(restauranteId, produto, usuarioLogado)
+                        ));
+        }   
+
 
     @Operation(summary = "Listar todos os produtos disponíveis", description = "Retorna uma lista simples de todos os itens ativos no sistema.")
     @GetMapping
@@ -79,11 +87,18 @@ public class ProdutoController {
         return ResponseEntity.ok(produtoService.buscarProdutosPorCategoria(categoria));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','RESTAURANTE')")
     @Operation(summary = "Alternar disponibilidade", description = "Ativa ou desativa um produto para venda no cardápio.")
     @PatchMapping("/{id}/disponibilidade")
-    public ResponseEntity<ProdutoResponseDTO> toggleDisponibilidade(@PathVariable Long id) {
-        return ResponseEntity.ok(produtoService.toggleDisponibilidade(id));
-    }
+    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ProdutoResponseDTO>> toggleDisponibilidade(
+    @PathVariable Long id,
+    @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(
+            new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(
+                produtoService.toggleDisponibilidade(id, usuarioLogado)
+            )
+        );
+}
 
     @Operation(summary = "Atualizar dados do produto")
     @PutMapping("/{id}")

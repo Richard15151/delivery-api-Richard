@@ -1,16 +1,13 @@
 package com.deliverytech.delivery_api.dto;
 
 import java.math.BigDecimal;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class VendasPorRestauranteDTO {
     private String nomeRestaurante;
     private BigDecimal totalVendas;
+
+    public VendasPorRestauranteDTO(String nomeRestaurante, BigDecimal totalVendas) {
+        this.nomeRestaurante = nomeRestaurante;
+        this.totalVendas = totalVendas;
+    }
 }

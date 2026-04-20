@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.5.13-SNAPSHOT</version>
-		<relativePath/>
+		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.deliverytech</groupId>
 	<artifactId>delivery-api</artifactId>
@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
-			<version>3.2.5</version>
+			<version>3.2.5</version> <!-- Check for latest version -->
 		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -69,7 +69,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-jackson</artifactId>
+			<artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson, jjwt-orgjson -->
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
@@ -144,4 +144,5 @@
 			</releases>
 		</pluginRepository>
 	</pluginRepositories>
+
 </project>

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deliverytech.delivery_api.dto.requests.LoginRequestDTO;
+import com.deliverytech.delivery_api.dto.responses.LoginResponseDTO;
 import com.deliverytech.delivery_api.enums.Role;
 import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.repository.UsuarioRepository;
@@ -16,12 +17,12 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
 @RequestMapping("/api/auth")
-public class AutenticacaoController {
+public class AuthController {
     private final UsuarioRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AutenticacaoController(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
+    public AuthController(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil) {
         this.repository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
@@ -39,11 +40,21 @@ public class AutenticacaoController {
 
         Usuario usuario = new Usuario();
         usuario.setEmail(request.getEmail());
+
         usuario.setSenha(passwordEncoder.encode(request.getSenha()));
-        usuario.setRole(request.getRole());
+
+        usuario.setRole(
+            request.getRole() != null ? request.getRole() : Role.CLIENTE
+        );
+
+        usuario.setAtivo(true);
+
         repository.save(usuario);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("Usuário cadastrado com sucesso.");
+        String token = jwtUtil.generateToken(usuario);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new LoginResponseDTO(token));
     }
 
 }

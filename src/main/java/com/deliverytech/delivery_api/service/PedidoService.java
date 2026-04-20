@@ -22,6 +22,7 @@ import com.deliverytech.delivery_api.model.ItemPedido;
 import com.deliverytech.delivery_api.model.Pedido;
 import com.deliverytech.delivery_api.model.Produto;
 import com.deliverytech.delivery_api.model.Restaurante;
+import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 import com.deliverytech.delivery_api.repository.ItemPedidoRepository;
 import com.deliverytech.delivery_api.repository.PedidoRepository;
@@ -62,17 +63,25 @@ public class PedidoService {
         this.mapper = mapper;
     }
 
-    @Transactional
-    public PedidoResponseDTO criarPedido(PedidoDTO dto) {
-        Cliente cliente = clienteRepository.findById(dto.getClienteId())
-            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+    private PedidoResponseDTO toDTO(Pedido pedido) {
+        return mapper.map(pedido, PedidoResponseDTO.class);
+    }
 
-        if (!cliente.isAtivo()) throw new BusinessException("Cliente inativo.");
+    @Transactional
+    public PedidoResponseDTO criarPedido(PedidoDTO dto, Usuario usuarioLogado) {
+
+        if (usuarioLogado == null) {
+            throw new BusinessException("Usuário não autenticado.");
+        }
+        Cliente cliente = clienteRepository.findByEmail(usuarioLogado.getEmail())
+                .orElseThrow(() -> new BusinessException("Cliente não encontrado para este usuário."));
+
+        if (!cliente.isAtivo()) {
+            throw new BusinessException("Cliente inativo.");
+        }
 
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())
-            .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
-
-        if (!restaurante.isAtivo()) throw new BusinessException("Restaurante inativo.");
+                .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
 
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
@@ -83,26 +92,32 @@ public class PedidoService {
         BigDecimal total = BigDecimal.ZERO;
 
         for (ItemPedidoDTO itemDTO : dto.getItens()) {
-            Produto produto = produtoRepository.findById(itemDTO.getProdutoId())
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
 
-            if (!produto.isDisponivel()) throw new BusinessException("Produto indisponível: " + produto.getNome());
+            Produto produto = produtoRepository.findById(itemDTO.getProdutoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
+
+            if (!produto.isDisponivel()) {
+                throw new BusinessException("Produto indisponível: " + produto.getNome());
+            }
 
             ItemPedido item = new ItemPedido();
             item.setPedido(pedido);
             item.setProduto(produto);
             item.setQuantidade(itemDTO.getQuantidade());
             item.setPrecoUnitario(produto.getPreco());
-            
-            BigDecimal subtotal = produto.getPreco().multiply(BigDecimal.valueOf(itemDTO.getQuantidade()));
+
+            BigDecimal subtotal = produto.getPreco()
+                    .multiply(BigDecimal.valueOf(itemDTO.getQuantidade()));
+
             item.setSubtotal(subtotal);
-            
+
             pedido.getItens().add(item);
             total = total.add(subtotal);
         }
 
         pedido.setValorTotal(total);
-        return toResponseDTO(pedidoRepository.save(pedido));
+
+        return toDTO(pedidoRepository.save(pedido));
     }
 
     @Transactional
@@ -121,6 +136,12 @@ public class PedidoService {
     public Page<PedidoResponseDTO> listarPorCliente(Long clienteId, Pageable pageable) {
         return pedidoRepository.buscarItensPorClientes(clienteId, pageable)
             .map(this::toResponseDTO);
+    }
+
+    private void validarDonoPedido(Pedido pedido, Usuario usuarioLogado) {
+        if (!pedido.getCliente().getEmail().equals(usuarioLogado.getEmail())) {
+            throw new BusinessException("Você não tem permissão para acessar este pedido.");
+        }
     }
 
     @Transactional(readOnly = true) 
@@ -190,19 +211,31 @@ public class PedidoService {
     }
 
     @Transactional
-    public PedidoResponseDTO cancelarPedido(Long pedidoId){
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-        .orElseThrow(()-> new EntityNotFoundException("Pedido não encontrado."));
+    public PedidoResponseDTO cancelarPedido(Long pedidoId, Usuario usuarioLogado) {
 
-        if(pedido.getStatus() == StatusPedido.ENTREGUE){
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado."));
+
+        validarDonoPedido(pedido, usuarioLogado);
+
+        if (pedido.getStatus() == StatusPedido.ENTREGUE) {
             throw new BusinessException("Pedido entregue não pode ser cancelado.");
         }
 
         pedido.setStatus(StatusPedido.CANCELADO);
-        Pedido salvo = pedidoRepository.save(pedido);
-        return toResponseDTO(salvo);
+
+        return toDTO(pedidoRepository.save(pedido));
     }
 
+    public Page<PedidoResponseDTO> meusPedidos(Usuario usuarioLogado, Pageable pageable) {
+
+        Cliente cliente = clienteRepository.findByEmail(usuarioLogado.getEmail())
+                .orElseThrow(() -> new BusinessException("Cliente não encontrado."));
+
+        return pedidoRepository.buscarItensPorClientes(cliente.getId(), pageable)
+                .map(this::toDTO);
+    }
+    
     public BigDecimal obterFaturamentoTotal(LocalDateTime inicio, LocalDateTime fim) {
         BigDecimal total = pedidoRepository.calcularTotalVendido(inicio, fim);
         return (total != null) ? total : BigDecimal.ZERO;

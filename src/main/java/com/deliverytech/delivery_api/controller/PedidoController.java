@@ -9,11 +9,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.deliverytech.delivery_api.dto.requests.PedidoDTO;
 import com.deliverytech.delivery_api.dto.responses.PagedResponse;
 import com.deliverytech.delivery_api.dto.responses.PedidoResponseDTO;
+import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.service.PedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,21 +31,25 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*")
 public class PedidoController {
 
-    private final PedidoService pedidoService;
+    private final PedidoService service;
 
-    public PedidoController(PedidoService pedidoService) {
-        this.pedidoService = pedidoService;
+    public PedidoController(PedidoService service) {
+        this.service = service;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENTE')")
     @Operation(summary = "Criar um novo pedido", description = "Envia um carrinho para processamento. Valida estoque e disponibilidade do restaurante.")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
         @ApiResponse(responseCode = "400", description = "Erro nos dados enviados ou item indisponível")
     })
     @PostMapping
-    public ResponseEntity<PedidoResponseDTO> criar(@RequestBody @Valid PedidoDTO dto) {
-        PedidoResponseDTO resultado = pedidoService.criarPedido(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
+    public ResponseEntity<?> criar(
+            @RequestBody @Valid PedidoDTO dto,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        return ResponseEntity.status(201)
+                .body(service.criarPedido(dto, usuarioLogado));
     }
 
     @Operation(summary = "Buscar pedido por ID")
@@ -52,7 +59,7 @@ public class PedidoController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.buscarPedidoPorId(id));
+        return ResponseEntity.ok(service.buscarPedidoPorId(id));
     }
 
     @Operation(summary = "Listar histórico do cliente (Paginado)")
@@ -63,7 +70,7 @@ public class PedidoController {
             @RequestParam(defaultValue = "10") int size) {
         
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(new PagedResponse<>(pedidoService.listarPorCliente(clienteId, pageable)));
+        return ResponseEntity.ok(new PagedResponse<>(service.listarPorCliente(clienteId, pageable)));
     }
 
     @Operation(summary = "Confirmar pedido", description = "Muda o status do pedido de PENDENTE para CONFIRMADO (Aceite do Restaurante).")
@@ -73,19 +80,22 @@ public class PedidoController {
     })
     @PutMapping("/{id}/confirmar")
     public ResponseEntity<PedidoResponseDTO> confirmar(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.confirmarPedido(id));
+        return ResponseEntity.ok(service.confirmarPedido(id));
     }
 
     @Operation(summary = "Avançar status da entrega", description = "Move o pedido pelo fluxo: CONFIRMADO -> PREPARANDO -> EM ENTREGA -> ENTREGUE.")
     @PatchMapping("/{id}/status/avancar")
     public ResponseEntity<PedidoResponseDTO> avancarStatus(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.atualizarStatus(id));
+        return ResponseEntity.ok(service.atualizarStatus(id));
     }
 
     @Operation(summary = "Cancelar pedido", description = "Cancela o pedido. Só pode ser feito antes do status PREPARANDO.")
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<PedidoResponseDTO> cancelar(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.cancelarPedido(id));
+    public ResponseEntity<?> cancelar(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        return ResponseEntity.ok(service.cancelarPedido(id, usuarioLogado));
     }
 
     @Operation(summary = "Filtrar pedidos por período")
@@ -93,6 +103,17 @@ public class PedidoController {
     public ResponseEntity<List<PedidoResponseDTO>> listarPorPeriodo(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
-        return ResponseEntity.ok(pedidoService.buscarPorPeriodo(inicio, fim));
+        return ResponseEntity.ok(service.buscarPorPeriodo(inicio, fim));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENTE')")
+    @GetMapping("/meus")
+    public ResponseEntity<?> meusPedidos(
+            @AuthenticationPrincipal Usuario usuarioLogado,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(service.meusPedidos(usuarioLogado, pageable));
     }
 }

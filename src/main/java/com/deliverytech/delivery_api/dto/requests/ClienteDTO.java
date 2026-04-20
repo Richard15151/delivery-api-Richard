@@ -23,7 +23,7 @@ public class ClienteDTO {
 
     @Schema(
         description = "Endereço de e-mail único para login e comunicações", 
-        example = "elaine@gmail.com", 
+        example = "richard@gmail.com", 
         requiredMode = Schema.RequiredMode.REQUIRED
     )
     @Email(message = "E-mail inválido.")
