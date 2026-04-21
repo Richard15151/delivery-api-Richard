@@ -67,7 +67,7 @@ public class RestauranteService {
     }
 
     public Page<RestauranteResponseDTO> listarAtivos(Pageable pageable) {
-        return repository.findByAtivoTrue(pageable)
+        return repository.findByAtivoTrueOrderByAvaliacaoDesc(pageable)
                 .map(r -> mapper.map(r, RestauranteResponseDTO.class));
     }
 

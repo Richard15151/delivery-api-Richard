@@ -55,7 +55,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
         @Param("fim") LocalDateTime fim
     );
 
-
     @Query("""
         select new com.deliverytech.delivery_api.dto.VendasPorRestauranteDTO(
             r.nome,

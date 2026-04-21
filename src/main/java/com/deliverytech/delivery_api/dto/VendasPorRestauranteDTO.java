@@ -10,4 +10,12 @@ public class VendasPorRestauranteDTO {
         this.nomeRestaurante = nomeRestaurante;
         this.totalVendas = totalVendas;
     }
+
+    public String getNomeRestaurante() {
+        return nomeRestaurante;
+    }
+
+    public BigDecimal getTotalVendas() {
+        return totalVendas;
+    }
 }

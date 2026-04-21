@@ -15,8 +15,8 @@ import com.deliverytech.delivery_api.model.Restaurante;
 public interface RestauranteRepository extends JpaRepository<Restaurante, Long>{
     List<Restaurante> findByNomeContainingIgnoreCase(String nome);
     boolean existsByNome(String nome);
-    Page<Restaurante> findByAtivoTrue(Pageable pageable);
     Page<Restaurante> findByCategoriaAndAtivoTrue(CategoriaRestaurante categoria, Pageable pageable);
+    Page<Restaurante> findByAtivoTrueOrderByAvaliacaoDesc(Pageable pageable);
     List<Restaurante> findByAtivoTrueOrderByAvaliacaoDesc();
     List<Restaurante> findByTaxaEntregaLessThanEqual(BigDecimal taxaEntrega);
     List<Restaurante> findTop5ByOrderByNomeAsc();
