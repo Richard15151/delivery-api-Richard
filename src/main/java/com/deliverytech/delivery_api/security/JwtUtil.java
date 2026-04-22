@@ -2,6 +2,7 @@ package com.deliverytech.delivery_api.security;
 
 import java.security.Key;
 import java.util.Date;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,8 @@ public class JwtUtil {
     private static final long EXPIRATION = 1000 * 60 * 60 * 24;
 
     private Key getSignKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    byte[] keyBytes = SECRET_KEY.getBytes(StandardCharsets.UTF_8);
+    return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(Usuario usuario) {

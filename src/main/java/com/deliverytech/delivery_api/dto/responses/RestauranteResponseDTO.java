@@ -8,6 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Schema(name = "RestauranteResponse", description = "Objeto que representa os dados de saída de um restaurante cadastrado.")
 public class RestauranteResponseDTO {
 
     @Schema(description = "Identificador único do restaurante no banco de dados", example = "1")

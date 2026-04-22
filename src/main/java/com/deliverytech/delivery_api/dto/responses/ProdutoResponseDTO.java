@@ -8,6 +8,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
+@Schema(name = "ProdutoResponse", description = "Objeto que representa os dados de saída de um produto cadastrado.")
 public class ProdutoResponseDTO {
 
     @Schema(description = "Identificador único do produto no banco de dados", example = "1")

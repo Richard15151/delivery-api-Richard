@@ -6,8 +6,7 @@ import java.util.List;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.deliverytech.delivery_api.enums.CategoriaRestaurante;
 import com.deliverytech.delivery_api.enums.Role;
@@ -35,12 +34,13 @@ public class DataLoader {
         RestauranteRepository restauranteRepository,
         ProdutoRepository produtoRepository,
         PedidoRepository pedidoRepository,
-        ItemPedidoRepository itemPedidoRepository
+        ItemPedidoRepository itemPedidoRepository,
+        PasswordEncoder passwordEncoder 
     ){
         return args -> {
             System.out.println("===== Inserindo Clientes e Usuarios ======");
             
-            Usuario u1 = criarUsuario(usuarioRepository, "joao@gmail.com", Role.CLIENTE);
+            Usuario u1 = criarUsuario(usuarioRepository, passwordEncoder, "joao@gmail.com", Role.CLIENTE);
             Cliente c1 = new Cliente();
             c1.setNome("João Freitas");
             c1.setEmail("joao@gmail.com");
@@ -49,7 +49,7 @@ public class DataLoader {
             c1.setUsuario(u1);
             c1.setAtivo(true);
 
-            Usuario u2 = criarUsuario(usuarioRepository, "mariana@gmail.com", Role.CLIENTE);
+            Usuario u2 = criarUsuario(usuarioRepository, passwordEncoder, "mariana@gmail.com", Role.CLIENTE);
             Cliente c2 = new Cliente();
             c2.setNome("Mariana Freitas");
             c2.setEmail("mariana@gmail.com");
@@ -58,7 +58,7 @@ public class DataLoader {
             c2.setUsuario(u2);
             c2.setAtivo(true);
 
-            Usuario u3 = criarUsuario(usuarioRepository, "joanna@gmail.com", Role.CLIENTE);
+            Usuario u3 = criarUsuario(usuarioRepository, passwordEncoder, "joanna@gmail.com", Role.CLIENTE);
             Cliente c3 = new Cliente();
             c3.setNome("Joanna Silva");
             c3.setEmail("joanna@gmail.com");
@@ -69,12 +69,9 @@ public class DataLoader {
 
             clienteRepository.saveAll(List.of(c1, c2, c3));
 
-            System.out.println("====== Consultando Clientes ======");
-            clienteRepository.findByEmail("joao@gmail.com").ifPresent(System.out::println);
-
             System.out.println("===== Inserindo Restaurantes e Usuarios ======");
 
-            Usuario uRest1 = criarUsuario(usuarioRepository, "pizzatop@email.com", Role.RESTAURANTE);
+            Usuario uRest1 = criarUsuario(usuarioRepository, passwordEncoder, "pizzatop@email.com", Role.RESTAURANTE);
             Restaurante r1 = new Restaurante();
             r1.setNome("pizza Top");
             r1.setCategoria(CategoriaRestaurante.PIZZARIA);
@@ -84,7 +81,7 @@ public class DataLoader {
             r1.setUsuario(uRest1);
             r1.setAtivo(true);
 
-            Usuario uRest2 = criarUsuario(usuarioRepository, "burgerhouse@email.com", Role.RESTAURANTE);
+            Usuario uRest2 = criarUsuario(usuarioRepository, passwordEncoder, "burgerhouse@email.com", Role.RESTAURANTE);
             Restaurante r2 = new Restaurante();
             r2.setNome("Burger House");
             r2.setCategoria(CategoriaRestaurante.HAMBURGUERIA);
@@ -106,14 +103,6 @@ public class DataLoader {
             p1.setDisponivel(true);
             p1.setRestaurante(r1);
 
-            Produto p2 = new Produto();
-            p2.setNome("Pizza de Frango");
-            p2.setDescricao("Pizza de frango com catupiry");
-            p2.setPreco(new BigDecimal("40.00"));
-            p2.setCategoria("Pizza");
-            p2.setDisponivel(true);
-            p2.setRestaurante(r1);
-
             Produto p4 = new Produto();
             p4.setNome("X-Burger");
             p4.setDescricao("Hambúrguer tradicional");
@@ -122,7 +111,7 @@ public class DataLoader {
             p4.setDisponivel(true);
             p4.setRestaurante(r2);
 
-            produtoRepository.saveAll(List.of(p1, p2, p4));
+            produtoRepository.saveAll(List.of(p1, p4));
 
             System.out.println("===== Inserindo Pedidos ======");
             Pedido pedido1 = new Pedido();
@@ -133,15 +122,7 @@ public class DataLoader {
             pedido1.setValorTotal(BigDecimal.ZERO);
             pedido1.setRestaurante(r1);
 
-            Pedido pedido2 = new Pedido();
-            pedido2.setCliente(c2);
-            pedido2.setEnderecoEntrega("av 2, 222");
-            pedido2.setStatus(StatusPedido.PENDENTE);
-            pedido2.setTaxaEntrega(new BigDecimal("5.00"));
-            pedido2.setValorTotal(BigDecimal.ZERO);
-            pedido2.setRestaurante(r2);
-
-            pedidoRepository.saveAll(List.of(pedido1, pedido2));
+            pedidoRepository.save(pedido1);
 
             System.out.println("===== Inserindo ItensPedido ======");
             ItemPedido i1 = new ItemPedido();
@@ -151,27 +132,19 @@ public class DataLoader {
             i1.setQuantidade(2);
             i1.setSubtotal(i1.getPrecoUnitario().multiply(BigDecimal.valueOf(i1.getQuantidade())));
 
-            ItemPedido i2 = new ItemPedido();
-            i2.setPedido(pedido2); 
-            i2.setProduto(p4); 
-            i2.setPrecoUnitario(p4.getPreco());
-            i2.setQuantidade(1);
-            i2.setSubtotal(i2.getPrecoUnitario().multiply(BigDecimal.valueOf(i2.getQuantidade())));
-
-            itemPedidoRepository.saveAll(List.of(i1, i2));
+            itemPedidoRepository.save(i1);
 
             pedido1.setValorTotal(i1.getSubtotal().add(pedido1.getTaxaEntrega()));
-            pedido2.setValorTotal(i2.getSubtotal().add(pedido2.getTaxaEntrega()));
-            pedidoRepository.saveAll(List.of(pedido1, pedido2));
+            pedidoRepository.save(pedido1);
 
             System.out.println("===== Carga de dados finalizada com sucesso! =====");
         };
     }
 
-    private Usuario criarUsuario(UsuarioRepository repo, String email, Role role) {
+    private Usuario criarUsuario(UsuarioRepository repo, PasswordEncoder encoder, String email, Role role) {
         Usuario u = new Usuario();
         u.setEmail(email);
-        u.setSenha("123456");
+        u.setSenha(encoder.encode("123456"));
         u.setAtivo(true);
         u.setRole(role);
         return repo.save(u);

@@ -21,7 +21,6 @@ public record ErrorResponse(
     @Schema(description = "Data e hora do erro")
     LocalDateTime timestamp
 ) {
-    // Atalho para criar erros rapidamente
     public ErrorResponse(String code, String message, String details) {
         this(false, code, message, details, LocalDateTime.now());
     }

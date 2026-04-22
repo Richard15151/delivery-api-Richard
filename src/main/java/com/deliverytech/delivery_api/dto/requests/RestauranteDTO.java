@@ -38,7 +38,8 @@ public class RestauranteDTO {
         description = "Endereço residencial para entregas", 
         example = "Rua das Flores, 123 - Centro", 
         minLength = 5, 
-        maxLength = 255
+        maxLength = 255,
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     @Size(min = 5, message = "Endereço deve ter no mínimo 5 caracteres")
     private String endereco;

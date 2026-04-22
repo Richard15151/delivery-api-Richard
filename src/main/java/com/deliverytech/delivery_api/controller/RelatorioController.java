@@ -16,6 +16,9 @@ import com.deliverytech.delivery_api.service.PedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,41 +34,63 @@ public class RelatorioController {
         this.pedidoService = pedidoService; 
     }
 
-    @Operation(summary = "Relatório: Faturamento total", description = "Calcula a soma financeira de todos os pedidos concluídos dentro do intervalo de tempo.")
+    @Operation(
+        summary = "Faturamento total por período", 
+        description = "Calcula a soma financeira de todos os pedidos concluídos dentro do intervalo de tempo informado. Utiliza o padrão ISO 8601."
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Faturamento calculado com sucesso."),
-        @ApiResponse(responseCode = "400", description = "Formato de data inválido.")
+        @ApiResponse(responseCode = "200", description = "Faturamento calculado com sucesso", 
+                     content = @Content(schema = @Schema(implementation = BigDecimal.class, example = "1550.50"))),
+        @ApiResponse(responseCode = "400", description = "Parâmetros de data inválidos ou malformados")
     })
     @GetMapping("/faturamento")
     public ResponseEntity<BigDecimal> getFaturamento(
-            @Parameter(description = "Data e hora de início (ISO 8601)", example = "2026-01-01T00:00:00")
+            @Parameter(description = "Data e hora de início", example = "2026-01-01T00:00:00")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             
-            @Parameter(description = "Data e hora de fim (ISO 8601)", example = "2026-12-31T23:59:59")
+            @Parameter(description = "Data e hora de fim", example = "2026-12-31T23:59:59")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
         return ResponseEntity.ok(pedidoService.obterFaturamentoTotal(inicio, fim));
     }
 
-    @Operation(summary = "Relatório: Quantidade por status", description = "Retorna o volume total de pedidos para um status específico (ex: PENDENTE, ENTREGUE).")
+    @Operation(
+        summary = "Volume de pedidos por status", 
+        description = "Retorna a contagem total de pedidos baseada no status (ex: PENDENTE, ENTREGUE, CANCELADO)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contagem realizada com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Status fornecido é inválido")
+    })
     @GetMapping("/estatisticas")
     public ResponseEntity<Long> getQuantidadePorStatus(
-            @Parameter(description = "Status do pedido para contagem") @RequestParam StatusPedido status) {
+            @Parameter(description = "Status do pedido para filtragem", schema = @Schema(implementation = StatusPedido.class)) 
+            @RequestParam StatusPedido status) {
         return ResponseEntity.ok(pedidoService.contarPedidosPorStatus(status));
     }
 
-    @Operation(summary = "Relatório: Ranking de produtos", description = "Lista os produtos mais vendidos com base na quantidade total de itens em pedidos finalizados.")
+    @Operation(
+        summary = "Ranking de produtos mais vendidos", 
+        description = "Lista os produtos com maior saída, retornando o nome do produto e a quantidade total vendida em pedidos finalizados."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Ranking gerado com sucesso",
+                     content = @Content(array = @ArraySchema(schema = @Schema(type = "array", example = "['Pizza Margherita', 45]"))))
+    })
     @GetMapping("/ranking-produtos")
     public ResponseEntity<List<Object[]>> getRanking() {
         return ResponseEntity.ok(pedidoService.obterRankingProdutos());
     }
 
-    @Operation(summary = "Vendas por período", description = "Endpoint alternativo para consulta rápida de faturamento por período.")
+    @Operation(
+        summary = "Consulta rápida de vendas", 
+        description = "Endpoint simplificado para extração de faturamento bruto por período de tempo."
+    )
     @GetMapping("/vendas-por-periodo")
     public ResponseEntity<BigDecimal> faturamento(
-            @Parameter(description = "Data de início", example = "2026-04-01T00:00:00")
+            @Parameter(description = "Início do período", example = "2026-04-01T00:00:00")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             
-            @Parameter(description = "Data de fim", example = "2026-04-30T23:59:59")
+            @Parameter(description = "Fim do período", example = "2026-04-30T23:59:59")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
         return ResponseEntity.ok(pedidoService.obterFaturamentoTotal(inicio, fim));
     }
