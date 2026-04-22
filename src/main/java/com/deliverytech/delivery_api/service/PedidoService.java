@@ -28,6 +28,7 @@ import com.deliverytech.delivery_api.repository.ItemPedidoRepository;
 import com.deliverytech.delivery_api.repository.PedidoRepository;
 import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
+import com.deliverytech.delivery_api.repository.UsuarioRepository;
 
 @Service
 public class PedidoService {
@@ -47,6 +48,9 @@ public class PedidoService {
     @Autowired
     private ProdutoRepository produtoRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     private final ModelMapper mapper;
 
     private PedidoResponseDTO toResponseDTO(Pedido pedido){
@@ -54,12 +58,13 @@ public class PedidoService {
     }
     
     public PedidoService(PedidoRepository pedidoRepository, ClienteRepository clienteRepository,
-            RestauranteRepository restauranteRepository, ItemPedidoRepository itemPedidoRepository, ModelMapper mapper, ProdutoRepository produtoRepository) {
+            RestauranteRepository restauranteRepository, ItemPedidoRepository itemPedidoRepository, ModelMapper mapper, ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository) {
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.restauranteRepository = restauranteRepository;
         this.itemPedidoRepository = itemPedidoRepository;
         this.produtoRepository = produtoRepository;
+        this.usuarioRepository = usuarioRepository;
         this.mapper = mapper;
     }
 
@@ -71,13 +76,16 @@ public class PedidoService {
     public PedidoResponseDTO criarPedido(PedidoDTO dto, Usuario usuarioLogado) {
 
         if (usuarioLogado == null) {
-            throw new BusinessException("Usuário não autenticado.");
+        throw new BusinessException("Usuário não autenticado.");
         }
-        Cliente cliente = clienteRepository.findByEmail(usuarioLogado.getEmail())
-                .orElseThrow(() -> new BusinessException("Cliente não encontrado para este usuário."));
 
-        if (!cliente.isAtivo()) {
-            throw new BusinessException("Cliente inativo.");
+        Usuario usuarioAtualizado = usuarioRepository.findById(usuarioLogado.getId())
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
+
+        Cliente cliente = usuarioAtualizado.getCliente();
+        
+        if (cliente == null) {
+            throw new BusinessException("Usuário logado não possui um perfil de cliente vinculado.");
         }
 
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())

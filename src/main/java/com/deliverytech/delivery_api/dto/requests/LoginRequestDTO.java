@@ -5,6 +5,7 @@ import com.deliverytech.delivery_api.enums.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -34,6 +35,6 @@ public class LoginRequestDTO {
         example = "CLIENTE", 
         requiredMode = Schema.RequiredMode.REQUIRED
     )
-    @NotBlank(message = "Campo role é obrigatório.")
+    @NotNull(message = "Campo role é obrigatório.")
     private Role role;
 }

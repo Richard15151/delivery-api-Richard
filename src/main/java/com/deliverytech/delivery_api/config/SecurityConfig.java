@@ -27,43 +27,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
-
             .csrf(csrf -> csrf.disable())
-
-            .sessionManagement(sm ->
-                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-
-
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((req, res, e) ->
-                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED)
-                )
+                .authenticationEntryPoint((req, res, e) -> {
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.getWriter().write("Nao autorizado: Token invalido ou ausente.");
+                })
+                .accessDeniedHandler((req, res, e) -> {
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.getWriter().write("Acesso Negado: Voce nao tem permissao para este recurso.");
+                })
             )
-
             .authorizeHttpRequests(auth -> auth
-
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/auth/me").authenticated()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-
-                .requestMatchers(HttpMethod.GET, "/api/restaurantes/**").permitAll()
-                .requestMatchers(HttpMethod.PATCH, "/api/restaurantes/**")
-                    .hasAnyRole("ADMIN", "RESTAURANTE")
-
-                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST,"/api/clientes/cadastrar").hasAnyRole("ADMIN", "CLIENTE")
-
-                .requestMatchers("/api/pedidos/**").hasAnyRole("ADMIN", "CLIENTE")
-
-                .requestMatchers(HttpMethod.POST, "/api/produtos/**")
-                .hasAnyRole("ADMIN", "RESTAURANTE")
-
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                
+                .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll() 
+                
                 .anyRequest().authenticated()
             )
-
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

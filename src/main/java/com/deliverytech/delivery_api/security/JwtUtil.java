@@ -22,8 +22,8 @@ public class JwtUtil {
     private static final long EXPIRATION = 1000 * 60 * 60 * 24;
 
     private Key getSignKey() {
-    byte[] keyBytes = SECRET_KEY.getBytes(StandardCharsets.UTF_8);
-    return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = SECRET_KEY.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(Usuario usuario) {
