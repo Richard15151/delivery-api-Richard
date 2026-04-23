@@ -8,7 +8,9 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -50,21 +52,12 @@ public class RestauranteController {
         @ApiResponse(responseCode = "409", description = "Já existe um restaurante cadastrado com este nome")
     })
     @PostMapping
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> cadastrar(
-                @Valid @RequestBody RestauranteDTO dados,
-                @Parameter(hidden = true) @AuthenticationPrincipal Usuario usuarioLogado) {
-
-                RestauranteResponseDTO response = service.cadastrar(dados, usuarioLogado);
-
-                URI location = ServletUriComponentsBuilder
-                        .fromCurrentRequest()
-                        .path("/{id}")
-                        .buildAndExpand(response.getId())
-                        .toUri();
-
-                return ResponseEntity.created(location)
-                        .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(response));
-        }
+    @PreAuthorize("hasAnyRole('RESTAURANTE', 'ADMIN')")
+    public ResponseEntity<RestauranteResponseDTO> cadastrar(
+            @Valid @RequestBody RestauranteDTO dto,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(dto, logado));
+    }
 
     @Operation(summary = "Listar restaurantes ativos", description = "Retorna uma lista paginada de todos os restaurantes operacionais. Possui cache de 60 segundos.")
     @GetMapping("/listar")
@@ -130,21 +123,21 @@ public class RestauranteController {
         @ApiResponse(responseCode = "403", description = "Usuário não é o proprietário deste restaurante")
     })
     @PatchMapping("/{id}/toggle")
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<RestauranteResponseDTO>> toggle(
-                @Parameter(description = "ID do restaurante") @PathVariable Long id,
-                @Parameter(hidden = true) @AuthenticationPrincipal Usuario usuarioLogado) {
-
-                return ResponseEntity.ok(
-                        new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.toggle(id, usuarioLogado))
-                );
-        }
+    @PreAuthorize("hasAnyRole('RESTAURANTE', 'ADMIN')")
+    public ResponseEntity<RestauranteResponseDTO> alternarStatus(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(service.toggle(id, logado));
+    }
 
     @Operation(summary = "Atualizar restaurante", description = "Atualiza dados como endereço, telefone e especialidade.")
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RESTAURANTE', 'ADMIN')")
     public ResponseEntity<RestauranteResponseDTO> atualizar(
-            @Parameter(description = "ID do restaurante") @PathVariable Long id, 
-            @Valid @RequestBody RestauranteDTO dto) {
-        return ResponseEntity.ok(service.atualizar(id, dto));
+            @PathVariable Long id,
+            @Valid @RequestBody RestauranteDTO dto,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(service.atualizar(id, dto, logado));
     }
 
     @Operation(summary = "Calcular frete", description = "Estima o valor da taxa de entrega baseado na distância entre o restaurante e o CEP de destino.")
@@ -183,7 +176,8 @@ public class RestauranteController {
         @ApiResponse(responseCode = "204", description = "Removido com sucesso")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@Parameter(description = "ID do restaurante") @PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }

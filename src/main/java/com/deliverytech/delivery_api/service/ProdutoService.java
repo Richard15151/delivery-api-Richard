@@ -33,11 +33,6 @@ public class ProdutoService {
         this.mapper = mapper;
     }
 
-    private Produto buscarEntidade(Long id) {
-        return produtoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
-    }
-
     private ProdutoResponseDTO returnResponseDTO(Produto p) {
     ProdutoResponseDTO dto = mapper.map(p, ProdutoResponseDTO.class);
     if (p.getRestaurante() != null) {
@@ -138,22 +133,30 @@ public class ProdutoService {
     }
 
     @Transactional
-    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoDTO dto) {
-        Produto produto = buscarEntidade(id);
-        
-        produto.setNome(dto.getNome());
-        produto.setDescricao(dto.getDescricao());
-        produto.setPreco(dto.getPreco());
-        produto.setCategoria(dto.getCategoria());
+    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoDTO dto, Usuario usuarioLogado) {
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
 
-        return returnResponseDTO(produtoRepository.save(produto));
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE") && 
+            !produto.getRestaurante().getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new BusinessException("Acesso negado.");
+        }
+
+        mapper.map(dto, produto);
+        return mapper.map(produtoRepository.save(produto), ProdutoResponseDTO.class);
     }
 
     @Transactional
-    public void deletar(Long id) {
-        if (!produtoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Produto não encontrado para exclusão.");
+    public void deletar(Long id, Usuario usuarioLogado) {
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
+
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE") && 
+            !produto.getRestaurante().getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new BusinessException("Você não tem permissão para excluir este produto.");
         }
-        produtoRepository.deleteById(id);
+
+        produto.setDisponivel(false);
+        produtoRepository.save(produto);
     }
 }

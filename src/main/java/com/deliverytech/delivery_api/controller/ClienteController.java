@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,13 +46,11 @@ public class ClienteController {
         @ApiResponse(responseCode = "403", description = "Usuário não tem permissão para esta operação")
     })
     @PostMapping("/cadastrar")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')")
     public ResponseEntity<ClienteResponseDTO> cadastrar(
             @Valid @RequestBody ClienteDTO dto,
-            @Parameter(hidden = true) @AuthenticationPrincipal Usuario logado) {
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(service.cadastrar(dto, logado));
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(dto, logado));
     }
 
     @Operation(summary = "Buscar cliente por ID", description = "Retorna os detalhes de um cliente específico através do seu identificador único.")
@@ -60,11 +59,9 @@ public class ClienteController {
         @ApiResponse(responseCode = "404", description = "Cliente não encontrado com o ID fornecido")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ClienteResponseDTO>> buscarPorId(
-            @Parameter(description = "ID do cliente", example = "1") @PathVariable Long id) {
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/json")
-                .body(new com.deliverytech.delivery_api.dto.responses.ApiResponse<>(service.buscarPorId(id)));
+    @PreAuthorize("hasAnyRole('ADMIN') or (hasRole('CLIENTE') and #id == principal.cliente.id)")
+    public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(service.buscarPorId(id));
     }
 
     @Operation(summary = "Listar clientes ativos de forma paginada", description = "Retorna uma lista de clientes que possuem status ativo no sistema.")
@@ -72,6 +69,7 @@ public class ClienteController {
         @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
     })
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PagedResponse<ClienteResponseDTO>> listarAtivos(
             @Parameter(description = "Número da página (0..N)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Quantidade de itens por página") @RequestParam(defaultValue = "10") int size
@@ -91,6 +89,7 @@ public class ClienteController {
         @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     })
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ClienteResponseDTO> alternarStatus(
             @Parameter(description = "ID do cliente") @PathVariable Long id) {
         return ResponseEntity.ok(service.alternarStatus(id));
@@ -103,10 +102,12 @@ public class ClienteController {
         @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     })
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENTE')")
     public ResponseEntity<ClienteResponseDTO> atualizar(
-            @Parameter(description = "ID do cliente") @PathVariable Long id, 
-            @Valid @RequestBody ClienteDTO dados) {
-        return ResponseEntity.ok(service.atualizar(id, dados));
+            @PathVariable Long id, 
+            @Valid @RequestBody ClienteDTO dados,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(service.atualizar(id, dados, logado));
     }
 
     @Operation(summary = "Excluir permanentemente um cliente", description = "Remove o registro do cliente do banco de dados.")
@@ -115,8 +116,8 @@ public class ClienteController {
         @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(
-            @Parameter(description = "ID do cliente") @PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }

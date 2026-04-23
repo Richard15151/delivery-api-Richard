@@ -120,18 +120,28 @@ public class RestauranteService {
     }
 
     @Transactional
-    public RestauranteResponseDTO atualizar(Long id, RestauranteDTO dto) {
-        Restaurante restaurante = buscarEntidade(id);
-        mapper.map(dto, restaurante); // O ModelMapper copia os dados do DTO para a Entidade existente
+    public RestauranteResponseDTO atualizar(Long id, RestauranteDTO dto, Usuario usuarioLogado) {
+        Restaurante restaurante = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
+
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE") && 
+            !restaurante.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new BusinessException("Você só pode atualizar o seu próprio restaurante.");
+        }
+
+        mapper.map(dto, restaurante);
+        restaurante.setCep(dto.getCep());
+        
         return mapper.map(repository.save(restaurante), RestauranteResponseDTO.class);
     }
 
     @Transactional
     public void deletar(Long id) {
-        if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Restaurante não encontrado.");
-        }
-        repository.deleteById(id);
+        Restaurante restaurante = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
+        
+        restaurante.setAtivo(false);
+        repository.save(restaurante);
     }
 
     @Transactional

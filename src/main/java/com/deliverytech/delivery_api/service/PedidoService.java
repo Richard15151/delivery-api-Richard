@@ -152,11 +152,17 @@ public class PedidoService {
         }
     }
 
-    @Transactional(readOnly = true) 
-    public PedidoResponseDTO buscarPedidoPorId(Long id) {
-        Pedido pedido = pedidoRepository.buscarCompletoPorId(id)
+    @Transactional(readOnly = true)
+    public PedidoResponseDTO buscarPedidoPorId(Long id, Usuario usuarioLogado) {
+        Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
-        
+
+        if (usuarioLogado.getRole().name().equals("CLIENTE")) {
+            if (!pedido.getCliente().getUsuario().getId().equals(usuarioLogado.getId())) {
+                throw new BusinessException("Acesso negado: Este pedido não pertence a você.");
+            }
+        }
+
         return mapper.map(pedido, PedidoResponseDTO.class);
     }
 
@@ -244,7 +250,10 @@ public class PedidoService {
                 .map(this::toDTO);
     }
     
-    public BigDecimal obterFaturamentoTotal(LocalDateTime inicio, LocalDateTime fim) {
+    public BigDecimal obterFaturamentoTotal(LocalDateTime inicio, LocalDateTime fim, Usuario usuarioLogado) {
+        if (!usuarioLogado.getRole().name().equals("ADMIN")) {
+            throw new BusinessException("Apenas administradores podem acessar dados de faturamento.");
+        }
         BigDecimal total = pedidoRepository.calcularTotalVendido(inicio, fim);
         return (total != null) ? total : BigDecimal.ZERO;
     }

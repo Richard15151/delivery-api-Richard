@@ -133,10 +133,12 @@ public class ProdutoController {
         @ApiResponse(responseCode = "400", description = "Dados de atualização inválidos")
     })
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RESTAURANTE')")
     public ResponseEntity<ProdutoResponseDTO> atualizar(
-            @Parameter(description = "ID do produto") @PathVariable Long id, 
-            @Valid @RequestBody ProdutoDTO dto) {
-        return ResponseEntity.ok(produtoService.atualizarProduto(id, dto));
+            @PathVariable Long id, 
+            @Valid @RequestBody ProdutoDTO dto,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(produtoService.atualizarProduto(id, dto, logado));
     }
 
     @Operation(summary = "Remover produto do cardápio", description = "Exclui permanentemente o registro do produto do sistema.")
@@ -145,9 +147,11 @@ public class ProdutoController {
         @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RESTAURANTE')")
     public ResponseEntity<Void> deletar(
-            @Parameter(description = "ID do produto") @PathVariable Long id) {
-        produtoService.deletar(id);
-        return ResponseEntity.noContent().build();
+        @PathVariable Long id, 
+        @AuthenticationPrincipal Usuario logado) {
+    produtoService.deletar(id, logado);
+    return ResponseEntity.noContent().build();
     }
 }

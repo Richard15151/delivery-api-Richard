@@ -1,11 +1,10 @@
 package com.deliverytech.delivery_api.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.deliverytech.delivery_api.dto.requests.ClienteDTO;
 import com.deliverytech.delivery_api.dto.responses.ClienteResponseDTO;
@@ -15,27 +14,20 @@ import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.model.Usuario;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 
-import jakarta.transaction.Transactional;
-
 @Service
 public class ClienteService {
     private final ClienteRepository repository;
     private final ModelMapper mapper;
 
-    public ClienteService (ClienteRepository repository, ModelMapper mapper){
+    public ClienteService(ClienteRepository repository, ModelMapper mapper) {
         this.repository = repository;
         this.mapper = mapper;
     }
 
-    public Cliente buscarPorEmail(String email){
-        return repository.findByEmail(email)
-            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
-    }
-
-    public ClienteResponseDTO buscarPorId(Long id){
-        Cliente cliente =  repository.findById(id)
-        .orElseThrow(()-> new EntityNotFoundException("Cliente não encontrado."));
-
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO buscarPorId(Long id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
         return mapper.map(cliente, ClienteResponseDTO.class);
     }
 
@@ -44,31 +36,18 @@ public class ClienteService {
             .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
     }
 
-     @Transactional
+    @Transactional
     public ClienteResponseDTO cadastrar(ClienteDTO dto, Usuario usuarioLogado) {
-
-        if (usuarioLogado == null) {
-            throw new BusinessException("Usuário não autenticado.");
-        }
-
-        if (!usuarioLogado.getRole().name().equals("CLIENTE")
-            && !usuarioLogado.getRole().name().equals("ADMIN")) {
-            throw new BusinessException("Apenas CLIENTE ou ADMIN podem criar perfil de cliente.");
-        }
-
         if (repository.existsByUsuario_Id(usuarioLogado.getId())) {
             throw new BusinessException("Cliente já cadastrado para este usuário.");
         }
 
         Cliente cliente = mapper.map(dto, Cliente.class);
-
         cliente.setUsuario(usuarioLogado);
         cliente.setEmail(usuarioLogado.getEmail());
         cliente.setAtivo(true);
 
-        Cliente salvo = repository.save(cliente);
-
-        return mapper.map(salvo, ClienteResponseDTO.class);
+        return mapper.map(repository.save(cliente), ClienteResponseDTO.class);
     }
 
     @Transactional
@@ -80,27 +59,35 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteResponseDTO atualizar(Long id, ClienteDTO dados) {
-        Cliente cliente = buscarEntidade(id);
+    public ClienteResponseDTO atualizar(Long id, ClienteDTO dados, Usuario usuarioLogado) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+
+        // Trava de segurança: Cliente só edita a si mesmo
+        if (usuarioLogado.getRole().name().equals("CLIENTE") && !cliente.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new BusinessException("Você não tem permissão para atualizar este perfil.");
+        }
+
         cliente.setNome(dados.getNome());
-        cliente.setEmail(dados.getEmail());
         cliente.setTelefone(dados.getTelefone());
         cliente.setEndereco(dados.getEndereco());
+        cliente.setCep(dados.getCep()); // Atualizando o novo campo CEP
 
-        Cliente clienteAtualizado = repository.save(cliente);
-        return mapper.map(clienteAtualizado, ClienteResponseDTO.class);
+        return mapper.map(repository.save(cliente), ClienteResponseDTO.class);
     }
 
     @Transactional
-    public void deletar(Long id){
-        if (!repository.existsByUsuario_Id(id)) {
-            throw new EntityNotFoundException("Cliente não encontrado para exclusão.");
-        }
-        repository.deleteById(id);
+    public void deletar(Long id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+        
+        // SOFT DELETE: Resolve o Erro 500 de integridade referencial
+        cliente.setAtivo(false);
+        repository.save(cliente);
     }
 
     public Page<ClienteResponseDTO> listarAtivos(Pageable pageable) {
-    Page<Cliente> clientes = repository.findByAtivoTrue(pageable);
-    return clientes.map(cliente -> mapper.map(cliente, ClienteResponseDTO.class));
+        return repository.findByAtivoTrue(pageable)
+                .map(cliente -> mapper.map(cliente, ClienteResponseDTO.class));
     }
 }

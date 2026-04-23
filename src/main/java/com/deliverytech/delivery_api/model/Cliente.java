@@ -1,18 +1,8 @@
 package com.deliverytech.delivery_api.model;
 
-
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,23 +11,27 @@ import lombok.Setter;
 @Entity
 @Table(name="cliente")
 public class Cliente {
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
     private String nome;
     private String email;
     private String telefone;
     private String endereco;
-    private Boolean ativo;
+    
+    private String cep; 
+    
+    private Boolean ativo = true;
 
-    @OneToMany(mappedBy = "cliente", fetch=FetchType.LAZY)
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
     private List<Pedido> pedidos = new ArrayList<>();
 
-    @OneToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="usuario_id", nullable=false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    public Boolean isAtivo(){
+    public Boolean isAtivo() {
         return ativo;
     }
 }

@@ -8,6 +8,7 @@ import com.deliverytech.delivery_api.validation.TelefoneValido;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -52,6 +53,15 @@ public class RestauranteDTO {
     @TelefoneValido
     @NotBlank(message = "Campo telefone é obrigatório.")
     private String telefone;
+    
+    @Schema(
+        description = "CEP do restaurante", 
+        example = "15367436", 
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotBlank(message = "O CEP é obrigatório")
+    @Pattern(regexp = "\\d{8}", message = "O CEP deve conter exatamente 8 números")
+    private String cep;
 
     @Schema(
         description = "Taxa de entrega do restaurante", 
