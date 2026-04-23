@@ -38,7 +38,6 @@ public class ProdutoController {
         this.produtoService = produtoService;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','RESTAURANTE')")
     @Operation(
         summary = "Cadastrar novo produto", 
         description = "Vincula um novo produto ao cardápio de um restaurante específico. Requer permissão de ADMIN ou do próprio RESTAURANTE."
@@ -50,6 +49,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "404", description = "Restaurante não encontrado")
     })
     @PostMapping("/restaurante/{restauranteId}")
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ProdutoResponseDTO>> cadastrar(
             @Parameter(description = "ID do restaurante proprietário do produto") @PathVariable Long restauranteId,
             @RequestBody @Valid ProdutoDTO produto,
@@ -70,6 +70,7 @@ public class ProdutoController {
                      content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProdutoResponseDTO.class))))
     })
     @GetMapping
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<List<ProdutoResponseDTO>> listarDisponiveis() {
         return ResponseEntity.ok(produtoService.listarDisponiveis());
     }
@@ -80,6 +81,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'RESTAURANTE')")
     public ResponseEntity<ProdutoResponseDTO> buscarPorId(
             @Parameter(description = "ID do produto", example = "50") @PathVariable Long id) {
         return ResponseEntity.ok(produtoService.buscarPorId(id));
@@ -90,6 +92,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "200", description = "Cardápio recuperado com sucesso")
     })
     @GetMapping("/restaurante/{restauranteId}")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<PagedResponse<ProdutoResponseDTO>> listarPorRestaurante(
             @Parameter(description = "ID do restaurante") @PathVariable Long restauranteId,
             @Parameter(description = "Página atual") @RequestParam(defaultValue = "0") int page,
@@ -101,12 +104,12 @@ public class ProdutoController {
 
     @Operation(summary = "Buscar produtos por categoria", description = "Filtra itens do cardápio global por categoria (ex: Pizza, Bebidas, Sobremesas).")
     @GetMapping("/categoria/{categoria}")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<List<ProdutoResponseDTO>> buscarPorCategoria(
             @Parameter(description = "Nome da categoria", example = "Lanches") @PathVariable String categoria) {
         return ResponseEntity.ok(produtoService.buscarProdutosPorCategoria(categoria));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','RESTAURANTE')")
     @Operation(
         summary = "Alternar disponibilidade (Ativo/Inativo)", 
         description = "Habilita ou desabilita a visibilidade do produto no cardápio. Útil para itens sazonais ou falta de estoque imediata."
@@ -117,6 +120,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
     @PatchMapping("/{id}/disponibilidade")
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<com.deliverytech.delivery_api.dto.responses.ApiResponse<ProdutoResponseDTO>> toggleDisponibilidade(
             @Parameter(description = "ID do produto") @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal Usuario usuarioLogado) {
@@ -133,7 +137,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "400", description = "Dados de atualização inválidos")
     })
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('RESTAURANTE')")
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<ProdutoResponseDTO> atualizar(
             @PathVariable Long id, 
             @Valid @RequestBody ProdutoDTO dto,
@@ -147,7 +151,7 @@ public class ProdutoController {
         @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('RESTAURANTE')")
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<Void> deletar(
         @PathVariable Long id, 
         @AuthenticationPrincipal Usuario logado) {

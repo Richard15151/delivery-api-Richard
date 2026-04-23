@@ -46,6 +46,7 @@ public class DataLoader {
             c1.setEmail("joao@gmail.com");
             c1.setTelefone("119999-8888");
             c1.setEndereco("av 1, 111");
+            c1.setCep("01001000");
             c1.setUsuario(u1);
             c1.setAtivo(true);
 
@@ -55,6 +56,7 @@ public class DataLoader {
             c2.setEmail("mariana@gmail.com");
             c2.setTelefone("119999-7777");
             c2.setEndereco("av 2, 222");
+            c2.setCep("01001001");
             c2.setUsuario(u2);
             c2.setAtivo(true);
 
@@ -64,6 +66,7 @@ public class DataLoader {
             c3.setEmail("joanna@gmail.com");
             c3.setTelefone("119999-7777");
             c3.setEndereco("av 3, 333");
+            c3.setCep("20040002");
             c3.setUsuario(u3);
             c3.setAtivo(true);
 
@@ -73,10 +76,12 @@ public class DataLoader {
 
             Usuario uRest1 = criarUsuario(usuarioRepository, passwordEncoder, "pizzatop@email.com", Role.RESTAURANTE);
             Restaurante r1 = new Restaurante();
-            r1.setNome("pizza Top");
+            r1.setNome("Pizza Top");
             r1.setCategoria(CategoriaRestaurante.PIZZARIA);
             r1.setEndereco("Rua um, 111");
+            r1.setCep("01001000");
             r1.setTelefone("11 9999-1111");
+            r1.setTaxaEntrega(new BigDecimal("7.00"));
             r1.setAvaliacao(new BigDecimal("4.5"));
             r1.setUsuario(uRest1);
             r1.setAtivo(true);
@@ -86,7 +91,9 @@ public class DataLoader {
             r2.setNome("Burger House");
             r2.setCategoria(CategoriaRestaurante.HAMBURGUERIA);
             r2.setEndereco("Rua dois, 222");
+            r2.setCep("01005000");
             r2.setTelefone("11 9999-2222");
+            r2.setTaxaEntrega(new BigDecimal("12.00"));
             r2.setAvaliacao(new BigDecimal("4.2"));
             r2.setUsuario(uRest2);
             r2.setAtivo(true);
@@ -118,7 +125,7 @@ public class DataLoader {
             pedido1.setCliente(c1);
             pedido1.setEnderecoEntrega("av 1, 111");
             pedido1.setStatus(StatusPedido.PENDENTE);
-            pedido1.setTaxaEntrega(new BigDecimal("5.00"));
+            pedido1.setTaxaEntrega(r1.getTaxaEntrega());
             pedido1.setValorTotal(BigDecimal.ZERO);
             pedido1.setRestaurante(r1);
 
@@ -136,6 +143,10 @@ public class DataLoader {
 
             pedido1.setValorTotal(i1.getSubtotal().add(pedido1.getTaxaEntrega()));
             pedidoRepository.save(pedido1);
+
+            System.out.println("===== Inserindo Administrador ======");
+
+            Usuario admin = criarUsuario(usuarioRepository, passwordEncoder, "admin@delivery.com", Role.ADMIN);
 
             System.out.println("===== Carga de dados finalizada com sucesso! =====");
         };

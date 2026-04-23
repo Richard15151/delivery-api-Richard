@@ -41,29 +41,30 @@ public class RestauranteService {
             throw new BusinessException("Usuário não autenticado.");
         }
 
-        if (usuarioLogado.getRole().name().equals("RESTAURANTE")) {
-
-            if (repository.existsById(usuarioLogado.getId())) {
-                throw new BusinessException("Você já possui um restaurante.");
-            }
+        if (repository.existsByUsuario_Id(usuarioLogado.getId())) {
+            throw new BusinessException("Acesso negado: Este usuário já possui um restaurante cadastrado.");
         }
 
         if (repository.existsByNome(dto.getNome())) {
-            throw new BusinessException("Restaurante já existe.");
+            throw new BusinessException("Já existe um restaurante cadastrado com este nome.");
         }
 
-        CategoriaRestaurante categoriaEnum =
-                CategoriaRestaurante.valueOf(dto.getCategoria().toUpperCase());
+        try {
+            CategoriaRestaurante categoriaEnum =
+                    CategoriaRestaurante.valueOf(dto.getCategoria().toUpperCase());
 
-        Restaurante r = mapper.map(dto, Restaurante.class);
+            Restaurante r = mapper.map(dto, Restaurante.class);
+            r.setUsuario(usuarioLogado); 
+            r.setCategoria(categoriaEnum);
+            r.setAtivo(true);
+            r.setAvaliacao(BigDecimal.ZERO);
+            r.setCep(dto.getCep());
 
-        r.setUsuario(usuarioLogado); 
-
-        r.setCategoria(categoriaEnum);
-        r.setAtivo(true);
-        r.setAvaliacao(BigDecimal.ZERO);
-
-        return mapper.map(repository.save(r), RestauranteResponseDTO.class);
+            return mapper.map(repository.save(r), RestauranteResponseDTO.class);
+            
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("Categoria inválida: " + dto.getCategoria());
+        }
     }
 
     public Page<RestauranteResponseDTO> listarAtivos(Pageable pageable) {
@@ -104,10 +105,16 @@ public class RestauranteService {
                 .toList();
     }
 
-    public BigDecimal calcularTaxaEntrega(Long restauranteId, String cep) {
-        Restaurante restaurante = buscarEntidade(restauranteId);
-        if (cep.startsWith("0")) {
-            return BigDecimal.ZERO;
+    public BigDecimal calcularTaxaEntrega(Long restauranteId, String cepCliente) {
+        Restaurante restaurante = repository.findById(restauranteId)
+                .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado."));
+
+        if (cepCliente == null || restaurante.getCep() == null) {
+            return restaurante.getTaxaEntrega();
+        }
+
+        if (cepCliente.substring(0, 3).equals(restaurante.getCep().substring(0, 3))) {
+            return restaurante.getTaxaEntrega().multiply(new BigDecimal("0.5"));
         }
         return restaurante.getTaxaEntrega();
     }
@@ -173,16 +180,16 @@ public class RestauranteService {
         return mapper.map(salvo, RestauranteResponseDTO.class);
     }
 
-    public List<RestauranteResponseDTO> buscarProximos(String cep) {
-    String prefixo = cep.substring(0, 5);
-    List<Restaurante> restaurantes = repository.findByEnderecoContaining(prefixo);
-    return restaurantes.stream()
-            .map(r -> {
-                RestauranteResponseDTO dto = new RestauranteResponseDTO();
-                dto.setId(r.getId());
-                dto.setNome(r.getNome());
-                return dto;
-            })
-            .toList();
+    public List<RestauranteResponseDTO> buscarProximos(String cepCliente) {
+        if (cepCliente == null || cepCliente.length() < 5) {
+            throw new BusinessException("CEP inválido para busca de proximidade.");
+        }
+        
+        String prefixo = cepCliente.substring(0, 3);
+        List<Restaurante> restaurantes = repository.findByCepStartingWith(prefixo);
+        
+        return restaurantes.stream()
+                .map(r -> mapper.map(r, RestauranteResponseDTO.class))
+                .toList();
     }
 }

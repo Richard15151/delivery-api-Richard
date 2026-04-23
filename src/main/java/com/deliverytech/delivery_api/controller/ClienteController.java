@@ -46,7 +46,7 @@ public class ClienteController {
         @ApiResponse(responseCode = "403", description = "Usuário não tem permissão para esta operação")
     })
     @PostMapping("/cadastrar")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ClienteResponseDTO> cadastrar(
             @Valid @RequestBody ClienteDTO dto,
             @AuthenticationPrincipal Usuario logado) {

@@ -58,7 +58,7 @@ public class PedidoController {
         @ApiResponse(responseCode = "404", description = "Pedido não encontrado com o ID informado")
     })
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CLIENTE','RESTAURANTE')")
     public ResponseEntity<PedidoResponseDTO> buscarPorId(
             @PathVariable Long id, 
             @AuthenticationPrincipal Usuario usuarioLogado) {
@@ -89,7 +89,7 @@ public class PedidoController {
         @ApiResponse(responseCode = "422", description = "Não é possível avançar a partir do status atual")
     })
     @PatchMapping("/{id}/status/avancar")
-    @PreAuthorize("hasAnyRole('RESTAURANTE')")
+    @PreAuthorize("hasRole('RESTAURANTE')")
     public ResponseEntity<PedidoResponseDTO> avancarStatus(@PathVariable Long id) {
         return ResponseEntity.ok(service.atualizarStatus(id));
     }
@@ -104,7 +104,7 @@ public class PedidoController {
         @ApiResponse(responseCode = "400", description = "Pedido já está em preparação ou finalizado")
     })
     @PatchMapping("/{id}/cancelar")
-    @PreAuthorize("hasRole('CLIENTE','RESTAURANTE')")
+    @PreAuthorize("hasAnyRole('CLIENTE','RESTAURANTE')")
     public ResponseEntity<?> cancelar(
             @Parameter(description = "ID do pedido") @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal Usuario usuarioLogado
@@ -117,7 +117,7 @@ public class PedidoController {
         @ApiResponse(responseCode = "200", description = "Lista de pedidos do usuário logado")
     })
     @GetMapping("/meus")
-    @PreAuthorize("hasAnyRole('CLIENTE')")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<?> meusPedidos(
             @Parameter(hidden = true) @AuthenticationPrincipal Usuario usuarioLogado,
             @Parameter(description = "Página") @RequestParam(defaultValue = "0") int page,

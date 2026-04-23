@@ -251,18 +251,37 @@ public class PedidoService {
     }
     
     public BigDecimal obterFaturamentoTotal(LocalDateTime inicio, LocalDateTime fim, Usuario usuarioLogado) {
-        if (!usuarioLogado.getRole().name().equals("ADMIN")) {
-            throw new BusinessException("Apenas administradores podem acessar dados de faturamento.");
+        Long restauranteId = null;
+
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE")) {
+            restauranteId = obterIdRestauranteDoUsuario(usuarioLogado);
+        } else if (!usuarioLogado.getRole().name().equals("ADMIN")) {
+            throw new BusinessException("Acesso negado aos relatórios.");
         }
-        BigDecimal total = pedidoRepository.calcularTotalVendido(inicio, fim);
+
+        BigDecimal total = pedidoRepository.calcularTotalVendido(inicio, fim, restauranteId);
         return (total != null) ? total : BigDecimal.ZERO;
     }
 
-    public Long contarPedidosPorStatus(StatusPedido status) {
-        return pedidoRepository.countByStatus(status);
+    public Long contarPedidosPorStatus(StatusPedido status, Usuario usuarioLogado) {
+        Long restauranteId = null;
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE")) {
+            restauranteId = obterIdRestauranteDoUsuario(usuarioLogado);
+        }
+        return pedidoRepository.countByStatusAndRestaurante(status, restauranteId);
     }
 
-    public List<Object[]> obterRankingProdutos() {
-        return pedidoRepository.buscarProdutosMaisVendidos();
+    public List<Object[]> obterRankingProdutos(Usuario usuarioLogado) {
+        Long restauranteId = null;
+        if (usuarioLogado.getRole().name().equals("RESTAURANTE")) {
+            restauranteId = obterIdRestauranteDoUsuario(usuarioLogado);
+        }
+        return pedidoRepository.buscarProdutosMaisVendidos(restauranteId);
+    }
+
+    private Long obterIdRestauranteDoUsuario(Usuario usuario) {
+        return restauranteRepository.findByUsuario_Id_Custom(usuario.getId()) 
+                .orElseThrow(() -> new BusinessException("Usuário não possui restaurante vinculado."))
+                .getId();
     }
 }

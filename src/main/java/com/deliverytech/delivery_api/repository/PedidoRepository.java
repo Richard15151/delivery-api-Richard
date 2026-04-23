@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import com.deliverytech.delivery_api.dto.VendasPorRestauranteDTO;
 import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.model.Pedido;
+import com.deliverytech.delivery_api.model.Restaurante;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByClienteId(Long clienteId);
@@ -26,14 +27,23 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByClienteIdAndStatus(Long clienteId, StatusPedido status);
     List<Pedido> findTop10ByOrderByDataPedidoDesc();
     
-    @Query("SELECT SUM(p.valorTotal) FROM Pedido p WHERE p.dataPedido BETWEEN :inicio AND :fim")
-    BigDecimal calcularTotalVendido(LocalDateTime inicio, LocalDateTime fim);
+    @Query("SELECT SUM(p.valorTotal) FROM Pedido p " +
+           "WHERE p.dataPedido BETWEEN :inicio AND :fim " +
+           "AND (:restauranteId IS NULL OR p.restaurante.id = :restauranteId)")
+    BigDecimal calcularTotalVendido(@Param("inicio") LocalDateTime inicio, 
+                                    @Param("fim") LocalDateTime fim, 
+                                    @Param("restauranteId") Long restauranteId);
 
-    Long countByStatus(StatusPedido status);
+    @Query("SELECT COUNT(p) FROM Pedido p " +
+           "WHERE p.status = :status " +
+           "AND (:restauranteId IS NULL OR p.restaurante.id = :restauranteId)")
+    Long countByStatusAndRestaurante(@Param("status") StatusPedido status, 
+                                     @Param("restauranteId") Long restauranteId);
 
     @Query("SELECT i.produto.nome, SUM(i.quantidade) as total FROM ItemPedido i " +
-       "GROUP BY i.produto.nome ORDER BY total DESC")
-    List<Object[]> buscarProdutosMaisVendidos();
+           "WHERE (:restauranteId IS NULL OR i.pedido.restaurante.id = :restauranteId) " +
+           "GROUP BY i.produto.nome ORDER BY total DESC")
+    List<Object[]> buscarProdutosMaisVendidos(@Param("restauranteId") Long restauranteId);
 
      @Query(value = """
         SELECT DISTINCT p FROM Pedido p
@@ -82,4 +92,5 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
        "JOIN FETCH i.produto " + 
        "WHERE p.id = :id")
     Optional<Pedido> buscarCompletoPorId(@Param("id") Long id);
+
 }

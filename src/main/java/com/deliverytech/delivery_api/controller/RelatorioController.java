@@ -28,7 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/relatorios")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANTE')")
 @Tag(name = "Relatórios", description = "Endpoints analíticos para monitoramento de faturamento, estatísticas e performance de vendas.")
 public class RelatorioController {
 
@@ -65,9 +65,9 @@ public class RelatorioController {
     })
     @GetMapping("/estatisticas")
     public ResponseEntity<Long> getQuantidadePorStatus(
-            @Parameter(description = "Status do pedido para filtragem", schema = @Schema(implementation = StatusPedido.class)) 
-            @RequestParam StatusPedido status) {
-        return ResponseEntity.ok(pedidoService.contarPedidosPorStatus(status));
+            @RequestParam StatusPedido status,
+            @AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(pedidoService.contarPedidosPorStatus(status, logado));
     }
 
     @Operation(
@@ -79,7 +79,7 @@ public class RelatorioController {
                      content = @Content(array = @ArraySchema(schema = @Schema(type = "array", example = "['Pizza Margherita', 45]"))))
     })
     @GetMapping("/ranking-produtos")
-    public ResponseEntity<List<Object[]>> getRanking() {
-        return ResponseEntity.ok(pedidoService.obterRankingProdutos());
+    public ResponseEntity<List<Object[]>> getRanking(@AuthenticationPrincipal Usuario logado) {
+        return ResponseEntity.ok(pedidoService.obterRankingProdutos(logado));
     }
 }
