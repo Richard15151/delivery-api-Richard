@@ -3,36 +3,43 @@ package com.deliverytech.delivery_api.controller;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.deliverytech.delivery_api.metrics.PedidoMetrics;
 
 @RestController
-@Tag(name = "Monitoramento", description = "Endpoints para verificação de saúde e informações do sistema")
 public class HealthController {
 
-    @Operation(
-        summary = "Verificar integridade do sistema (Health Check)", 
-        description = "Retorna o status atual da aplicação, timestamp e versão do Java em execução."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Sistema operando normalmente",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(value = "{\"status\": \"UP\", \"service\": \"Delivery Api\", \"javaVersion\": \"21\"}")
-            )
-        )
-    })
-    @GetMapping("/health")
+    private static final Logger log = LoggerFactory.getLogger(HealthController.class);
+    
+    private final PedidoMetrics pedidoMetrics;
+
+
+    public HealthController(PedidoMetrics pedidoMetrics) {
+        this.pedidoMetrics = pedidoMetrics;
+    }
+            /* custmon-health */
+    @GetMapping("/custom-health")
     public Map<String, String> health(){
+        log.info("Endpoint {} chamado às {}", "/custom-health", LocalDateTime.now());
+        log.info("Teste MDC funcionando.");
+        
+        pedidoMetrics.incrementarPedidos();
+        pedidoMetrics.pedidoAprovado();
+        pedidoMetrics.pedidoCancelado();
+
+
+        pedidoMetrics.medirTempo(()->{
+            try{
+                Thread.sleep(200);
+            }catch(InterruptedException e){
+                Thread.currentThread().interrupt();
+            }
+        });
+
         return Map.of(
             "status", "UP",
             "timestamp", LocalDateTime.now().toString(),
@@ -41,22 +48,20 @@ public class HealthController {
         );   
     }
 
-    @Operation(
-        summary = "Informações da aplicação", 
-        description = "Retorna detalhes sobre a versão da API, desenvolvedor e tecnologias utilizadas."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Informações recuperadas com sucesso")
-    })
-    @GetMapping("/info")
+    @GetMapping("/custom-info")
     public AppInfo info(){
         return new AppInfo(
             "Delivery Tech Api",
             "1.0.0",
-            "Richard Oliveira",
+            "Elaine Soares",
             "JDK 21",
             "Spring Boot"
         );
+    }
+
+    @GetMapping("/api/teste")
+    public String teste() {
+        return "ok";
     }
 
     public record AppInfo(
@@ -66,4 +71,10 @@ public class HealthController {
         String javaVersion,
         String framework
     ){}
+
+
+
+
+
 }
+
