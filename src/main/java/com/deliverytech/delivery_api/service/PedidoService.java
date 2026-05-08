@@ -30,6 +30,9 @@ import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
 import com.deliverytech.delivery_api.repository.UsuarioRepository;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
+
 @Service
 public class PedidoService {
 
@@ -52,13 +55,14 @@ public class PedidoService {
     private UsuarioRepository usuarioRepository;
 
     private final ModelMapper mapper;
+    private final Tracer tracer;
 
     private PedidoResponseDTO toResponseDTO(Pedido pedido){
         return mapper.map(pedido, PedidoResponseDTO.class);
     }
     
     public PedidoService(PedidoRepository pedidoRepository, ClienteRepository clienteRepository,
-            RestauranteRepository restauranteRepository, ItemPedidoRepository itemPedidoRepository, ModelMapper mapper, ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository) {
+            RestauranteRepository restauranteRepository, ItemPedidoRepository itemPedidoRepository, ModelMapper mapper, ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, Tracer tracer) {
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.restauranteRepository = restauranteRepository;
@@ -66,6 +70,7 @@ public class PedidoService {
         this.produtoRepository = produtoRepository;
         this.usuarioRepository = usuarioRepository;
         this.mapper = mapper;
+        this.tracer = tracer;
     }
 
     private PedidoResponseDTO toDTO(Pedido pedido) {
