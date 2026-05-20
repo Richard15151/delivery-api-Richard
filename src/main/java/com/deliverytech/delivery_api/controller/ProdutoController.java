@@ -70,7 +70,7 @@ public class ProdutoController {
                      content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProdutoResponseDTO.class))))
     })
     @GetMapping
-    @PreAuthorize("hasRole('RESTAURANTE')")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<List<ProdutoResponseDTO>> listarDisponiveis() {
         return ResponseEntity.ok(produtoService.listarDisponiveis());
     }
