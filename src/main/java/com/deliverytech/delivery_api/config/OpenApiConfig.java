@@ -38,7 +38,7 @@ public class OpenApiConfig {
             .info( 
                 new Info()
                 .title("Delivery API")
-                .description("Api para gerenciamento.")
+                .description("API REST desenvolvida em Java com Spring Boot 3 para o gerenciamento completo de um ecossistema de delivery de comida. A aplicação implementa uma arquitetura robusta em camadas, integrando autenticação e autorização via segurança JWT (com perfis distintos para Clientes, Restaurantes e Administradores), persistência de dados com Spring Data JPA, regras de negócio para cálculo logístico baseado em CEP, relatórios analíticos de faturamento e alta observabilidade através do monitoramento em tempo real com Actuator e Prometheus.")
                 .version("1.0")
                 .contact(new Contact().name("Suporte").email("suporte@exemplo.com"))
             )
